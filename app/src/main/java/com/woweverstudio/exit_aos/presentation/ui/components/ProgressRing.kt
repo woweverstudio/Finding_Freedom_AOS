@@ -17,7 +17,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -91,42 +90,33 @@ fun ProgressRingView(
             )
         }
         
-        // 중앙 텍스트
+        // 중앙 텍스트 (iOS 순서: 현재자산 → /목표자산 → 퍼센트)
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 퍼센트
+            // 현재 자산
             Text(
-                text = percentText,
-                style = ExitTypography.Title,
-                color = ExitColors.Accent
+                text = if (hideAmounts) "•••" else currentAmount,
+                style = ExitTypography.Title3,
+                color = ExitColors.PrimaryText,
+                textAlign = TextAlign.Center
+            )
+            
+            // / 목표 자산
+            Text(
+                text = if (hideAmounts) "/ •••" else "/ $targetAmount",
+                style = ExitTypography.Caption,
+                color = ExitColors.SecondaryText,
+                textAlign = TextAlign.Center
             )
             
             Spacer(modifier = Modifier.height(ExitSpacing.XS))
             
-            // 현재 자산
+            // 퍼센트
             Text(
-                text = currentAmount,
-                style = ExitTypography.Caption,
-                color = ExitColors.PrimaryText,
-                textAlign = TextAlign.Center,
-                modifier = if (hideAmounts) Modifier.blur(5.dp) else Modifier
-            )
-            
-            // 구분선
-            Text(
-                text = "/",
-                style = ExitTypography.Caption2,
-                color = ExitColors.TertiaryText
-            )
-            
-            // 목표 자산
-            Text(
-                text = targetAmount,
-                style = ExitTypography.Caption,
-                color = ExitColors.SecondaryText,
-                textAlign = TextAlign.Center,
-                modifier = if (hideAmounts) Modifier.blur(5.dp) else Modifier
+                text = percentText,
+                style = ExitTypography.Title2,
+                color = ExitColors.Accent
             )
         }
     }

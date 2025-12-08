@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Home
@@ -75,7 +76,8 @@ fun ExitApp() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(ExitColors.Background),
+                    .background(ExitColors.Background)
+                    .statusBarsPadding(),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(color = ExitColors.Accent)

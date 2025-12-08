@@ -150,7 +150,7 @@ class OnboardingViewModel @Inject constructor(
     }
     
     fun resetCurrentValue() {
-        setCurrentInputValue(_currentStep.value.defaultValue)
+        setCurrentInputValue(0.0)
     }
     
     fun completeOnboarding() {

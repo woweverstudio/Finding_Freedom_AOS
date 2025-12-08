@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
@@ -63,6 +65,8 @@ fun OnboardingScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(ExitColors.Background)
+            .statusBarsPadding()
+            .navigationBarsPadding()
     ) {
         AnimatedContent(
             targetState = showWelcome,
@@ -157,7 +161,9 @@ private fun OnboardingStepContent(
                 onDigitClick = { viewModel.appendDigit(it) },
                 onDeleteClick = { viewModel.deleteLastDigit() },
                 onQuickAmountClick = { viewModel.addQuickAmount(it) },
+                onResetClick = { viewModel.resetCurrentValue() },
                 showNegativeToggle = viewModel.showsNegativeToggle,
+                isNegative = value < 0,
                 onToggleSign = { viewModel.toggleSign() }
             )
         }
