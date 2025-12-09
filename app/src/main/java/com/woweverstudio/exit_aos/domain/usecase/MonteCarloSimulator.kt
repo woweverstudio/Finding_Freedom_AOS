@@ -173,11 +173,15 @@ object MonteCarloSimulator {
         trackPaths: Boolean = true,
         progressCallback: ProgressCallback? = null
     ): MonteCarloResult = coroutineScope {
-        // 월 수익률 파라미터 미리 계산
-        val annualMean = meanReturn / 100.0
-        val annualVolatility = volatility / 100.0
+        // 월 수익률 파라미터 미리 계산 (ln 계산 안전하게 처리)
+        val annualMean = (meanReturn / 100.0).coerceAtLeast(-0.99) // ln(0) 방지: 최소 -99%
+        val annualVolatility = (volatility / 100.0).coerceAtLeast(0.0)
         val monthlyMean = ln(1 + annualMean) / 12.0
         val monthlyVolatility = annualVolatility / sqrt(12.0)
+        
+        // 메모리 최적화: 경로 추적은 샘플링만 (전체의 1%만 저장)
+        val trackPathsSampled = trackPaths
+        val sampleRate = if (trackPaths) 100 else Int.MAX_VALUE // 100개당 1개만 저장
         
         // 청크 크기 계산
         val chunkSize = simulationCount / parallelism
@@ -196,6 +200,9 @@ object MonteCarloSimulator {
                 var failureCount = 0
                 
                 for (i in 0 until chunkCount) {
+                    // 메모리 최적화: 샘플링 (100개당 1개만 경로 저장)
+                    val shouldTrackPath = trackPathsSampled && (i % sampleRate == 0)
+                    
                     val (months, path) = runSingleSimulation(
                         initialAsset = initialAsset,
                         monthlyInvestment = monthlyInvestment,
@@ -203,7 +210,7 @@ object MonteCarloSimulator {
                         monthlyMean = monthlyMean,
                         monthlyVolatility = monthlyVolatility,
                         maxMonths = maxMonths,
-                        trackPath = trackPaths,
+                        trackPath = shouldTrackPath,
                         random = random
                     )
                     
@@ -213,7 +220,7 @@ object MonteCarloSimulator {
                         failureCount++
                     }
                     
-                    if (trackPaths && path != null) {
+                    if (shouldTrackPath && path != null) {
                         paths.add(path)
                     }
                     
@@ -238,8 +245,8 @@ object MonteCarloSimulator {
         
         val successRate = allSuccessMonths.size.toDouble() / simulationCount
         
-        // 대표 경로 추출
-        val representativePaths = if (trackPaths) {
+        // 대표 경로 추출 (샘플링된 경로 중에서 선택)
+        val representativePaths = if (trackPathsSampled && allPaths.isNotEmpty()) {
             extractRepresentativePaths(allPaths, allSuccessMonths)
         } else null
         
@@ -279,15 +286,17 @@ object MonteCarloSimulator {
             // 1. 월초 투자금 추가
             currentAsset += monthlyInvestment
             
-            // 2. Box-Muller 변환 (인라인)
-            val u1 = random.nextDouble()
+            // 2. Box-Muller 변환 (u1이 0이면 ln(0) = -Infinity 방지)
+            val u1 = random.nextDouble().coerceIn(1e-10, 1.0 - 1e-10)
             val u2 = random.nextDouble()
             val z0 = sqrt(-2.0 * ln(u1)) * cos(2.0 * PI * u2)
             val monthlyReturn = monthlyMean + z0 * monthlyVolatility
             
             // 3. 수익 적용
             currentAsset *= exp(monthlyReturn)
-            if (currentAsset < 0) currentAsset = 0.0
+            if (currentAsset < 0 || currentAsset.isNaN() || currentAsset.isInfinite()) {
+                currentAsset = 0.0
+            }
             
             months++
             
@@ -322,24 +331,32 @@ object MonteCarloSimulator {
         if (paths.isEmpty()) return null
         
         val sorted = successMonths.sorted()
-        val bestIndex = (sorted.size * 0.1).toInt()
-        val medianIndex = sorted.size / 2
-        val worstIndex = (sorted.size * 0.9).toInt()
+        val sortedSize = sorted.size
+        
+        // 안전한 인덱스 계산 (IndexOutOfBoundsException 방지)
+        val safeIndex = { size: Int, percent: Double -> 
+            (size * percent).toInt().coerceIn(0, size - 1)
+        }
+        
+        val bestIndex = safeIndex(sortedSize, 0.1)
+        val medianIndex = sortedSize / 2
+        val worstIndex = safeIndex(sortedSize, 0.9)
         
         val bestMonths = sorted[bestIndex]
         val medianMonths = sorted[medianIndex]
-        val worstMonths = sorted[min(worstIndex, sorted.size - 1)]
+        val worstMonths = sorted[worstIndex]
         
-        // 해당 개월수와 가장 가까운 경로 찾기
+        // 해당 개월수와 가장 가까운 경로 찾기 (안전한 폴백)
+        val pathSize = paths.size
         val bestPath = paths.find { it.monthsToTarget == bestMonths }
-            ?: paths.getOrNull(bestIndex)
+            ?: paths.getOrNull(safeIndex(pathSize, 0.1))
             ?: paths.first()
         val medianPath = paths.find { it.monthsToTarget == medianMonths }
-            ?: paths.getOrNull(medianIndex)
-            ?: paths[paths.size / 2]
+            ?: paths.getOrNull(pathSize / 2)
+            ?: paths.first()
         val worstPath = paths.find { it.monthsToTarget == worstMonths }
-            ?: paths.getOrNull(min(worstIndex, paths.size - 1))
-            ?: paths.last()
+            ?: paths.getOrNull(safeIndex(pathSize, 0.9))
+            ?: paths.first()
         
         return RepresentativePaths(
             best = bestPath,

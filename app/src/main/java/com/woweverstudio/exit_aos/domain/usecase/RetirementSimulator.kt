@@ -112,9 +112,10 @@ object RetirementSimulator {
         simulationCount: Int = 30_000,
         progressCallback: RetirementProgressCallback? = null
     ): RetirementSimulationResult = coroutineScope {
-        // 월 수익률 파라미터 미리 계산
-        val monthlyMean = ln(1 + annualReturn / 100) / 12.0
-        val monthlyVolatility = (volatility / 100) / sqrt(12.0)
+        // 월 수익률 파라미터 미리 계산 (ln 계산 안전하게 처리)
+        val safeAnnualReturn = (annualReturn / 100).coerceAtLeast(-0.99) // ln(0) 방지: 최소 -99%
+        val monthlyMean = ln(1 + safeAnnualReturn) / 12.0
+        val monthlyVolatility = (volatility / 100).coerceAtLeast(0.0) / sqrt(12.0)
         
         // 청크 크기 계산
         val chunkSize = simulationCount / parallelism
@@ -166,21 +167,25 @@ object RetirementSimulator {
         val sortedByFinal = allPaths.sortedWith(compareBy<RetirementPath> { it.finalAsset }
             .thenBy { it.depletionYear ?: Int.MAX_VALUE })
         
-        val veryWorstPath = sortedByFinal[simulationCount * 10 / 100]
-        val unluckyPath = sortedByFinal[simulationCount * 30 / 100]
-        val medianPath = sortedByFinal[simulationCount * 50 / 100]
-        val luckyPath = sortedByFinal[simulationCount * 70 / 100]
-        val veryBestPath = sortedByFinal[simulationCount * 90 / 100]
+        // 실제 경로 개수 기준으로 인덱스 계산 (IndexOutOfBoundsException 방지)
+        val pathCount = sortedByFinal.size
+        val safeIndex = { percent: Int -> (pathCount * percent / 100).coerceIn(0, pathCount - 1) }
+        
+        val veryWorstPath = sortedByFinal[safeIndex(10)]
+        val unluckyPath = sortedByFinal[safeIndex(30)]
+        val medianPath = sortedByFinal[safeIndex(50)]
+        val luckyPath = sortedByFinal[safeIndex(70)]
+        val veryBestPath = sortedByFinal[safeIndex(90)]
         
         // === 단기 (10년) 기준 정렬 ===
         val sortedBy10Years = allPaths.sortedWith(compareBy<RetirementPath> { it.assetAt10Years }
             .thenBy { it.depletionYear ?: Int.MAX_VALUE })
         
-        val shortTermVeryWorstPath = sortedBy10Years[simulationCount * 10 / 100]
-        val shortTermUnluckyPath = sortedBy10Years[simulationCount * 30 / 100]
-        val shortTermMedianPath = sortedBy10Years[simulationCount * 50 / 100]
-        val shortTermLuckyPath = sortedBy10Years[simulationCount * 70 / 100]
-        val shortTermVeryBestPath = sortedBy10Years[simulationCount * 90 / 100]
+        val shortTermVeryWorstPath = sortedBy10Years[safeIndex(10)]
+        val shortTermUnluckyPath = sortedBy10Years[safeIndex(30)]
+        val shortTermMedianPath = sortedBy10Years[safeIndex(50)]
+        val shortTermLuckyPath = sortedBy10Years[safeIndex(70)]
+        val shortTermVeryBestPath = sortedBy10Years[safeIndex(90)]
         
         RetirementSimulationResult(
             veryBestPath = veryBestPath,
@@ -220,13 +225,18 @@ object RetirementSimulator {
         for (year in 1..years) {
             // 12개월 시뮬레이션 (인라인 최적화)
             repeat(12) {
-                // Box-Muller 변환
-                val u1 = random.nextDouble()
+                // Box-Muller 변환 (u1이 0이면 ln(0) = -Infinity 방지)
+                val u1 = random.nextDouble().coerceIn(1e-10, 1.0 - 1e-10)
                 val u2 = random.nextDouble()
                 val z0 = sqrt(-2.0 * ln(u1)) * cos(2.0 * PI * u2)
                 val monthlyReturn = monthlyMean + z0 * monthlyVolatility
                 
                 currentAsset = currentAsset * exp(monthlyReturn) - monthlySpending
+                
+                // NaN/Infinity 방지
+                if (currentAsset.isNaN() || currentAsset.isInfinite()) {
+                    currentAsset = 0.0
+                }
             }
             
             yearlyAssets[year] = max(0.0, currentAsset)
