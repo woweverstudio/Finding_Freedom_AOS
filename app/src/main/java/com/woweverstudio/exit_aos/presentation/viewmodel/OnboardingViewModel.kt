@@ -89,6 +89,16 @@ class OnboardingViewModel @Inject constructor(
     
     // MARK: - Actions
     
+    /** 온보딩 상태 초기화 (데이터 삭제 후 다시 온보딩할 때 사용) */
+    fun reset() {
+        _showWelcome.value = true
+        _currentStep.value = OnboardingStep.DESIRED_INCOME
+        _desiredMonthlyIncome.value = 3_000_000.0
+        _currentNetAssets.value = 0.0
+        _monthlyInvestment.value = 500_000.0
+        _isCompleted.value = false
+    }
+    
     fun dismissWelcome() {
         _showWelcome.value = false
     }

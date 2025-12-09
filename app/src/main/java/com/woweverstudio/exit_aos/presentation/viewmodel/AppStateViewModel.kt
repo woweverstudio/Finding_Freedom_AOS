@@ -154,6 +154,11 @@ class AppStateViewModel @Inject constructor(
         _selectedTab.value = tab
     }
     
+    /** 탭을 홈으로 초기화 */
+    fun resetToHomeTab() {
+        _selectedTab.value = MainTab.DASHBOARD
+    }
+    
     fun toggleHideAmounts() {
         _hideAmounts.value = !_hideAmounts.value
     }

@@ -55,6 +55,11 @@ fun OnboardingScreen(
     val currentStep by viewModel.currentStep.collectAsState()
     val isCompleted by viewModel.isCompleted.collectAsState()
     
+    // 온보딩 화면이 표시될 때 상태 초기화
+    LaunchedEffect(Unit) {
+        viewModel.reset()
+    }
+    
     LaunchedEffect(isCompleted) {
         if (isCompleted) {
             onComplete()

@@ -211,7 +211,8 @@ private fun InfoRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.Top
     ) {
         // 현재 자산
         InfoItem(
@@ -253,17 +254,28 @@ private fun InfoItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        Text(
-            text = label,
-            style = ExitTypography.Caption2,
-            color = ExitColors.TertiaryText
-        )
-        Text(
-            text = value,
-            style = ExitTypography.Caption3,
-            color = color,
-            maxLines = 1
-        )
+        // Box로 감싸서 고정 높이 내에서 중앙 정렬
+        Box(
+            modifier = Modifier.height(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = label,
+                style = ExitTypography.Caption2,
+                color = ExitColors.TertiaryText
+            )
+        }
+        Box(
+            modifier = Modifier.height(18.dp),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Text(
+                text = value,
+                style = ExitTypography.Caption3,
+                color = color,
+                maxLines = 1
+            )
+        }
     }
 }
 

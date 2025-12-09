@@ -74,14 +74,15 @@ fun ExitApp(
     val userProfile by appStateViewModel.userProfile.collectAsState()
     
     var isLoading by remember { mutableStateOf(true) }
-    var showOnboarding by remember { mutableStateOf(false) }
     
-    LaunchedEffect(userProfile) {
-        // 데이터 로드 후 온보딩 완료 여부 확인
+    // 초기 로딩 (한 번만 실행)
+    LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(500) // 초기 로딩 대기
         isLoading = false
-        showOnboarding = userProfile?.hasCompletedOnboarding != true
     }
+    
+    // userProfile의 hasCompletedOnboarding 값으로 직접 판단 (iOS와 동일한 방식)
+    val hasCompletedOnboarding = userProfile?.hasCompletedOnboarding == true
     
     when {
         isLoading -> {
@@ -96,12 +97,13 @@ fun ExitApp(
                 CircularProgressIndicator(color = ExitColors.Accent)
             }
         }
-        showOnboarding -> {
-            // 온보딩 화면
+        !hasCompletedOnboarding -> {
+            // 온보딩 화면 (userProfile이 없거나 온보딩 미완료 시)
             OnboardingScreen(
                 onComplete = {
-                    showOnboarding = false
-                    appStateViewModel.loadData()
+                    appStateViewModel.resetToHomeTab() // 탭을 홈으로 초기화
+                    // userProfile이 생성되면 hasCompletedOnboarding이 true가 되어
+                    // 자동으로 메인 화면으로 전환됨
                 }
             )
         }
@@ -109,7 +111,12 @@ fun ExitApp(
             // 메인 화면
             MainScreen(
                 appStateViewModel = appStateViewModel,
-                billingService = billingService
+                billingService = billingService,
+                onNavigateToOnboarding = {
+                    appStateViewModel.resetToHomeTab() // 탭을 홈으로 미리 초기화
+                    // 데이터 삭제 후 userProfile이 null이 되면
+                    // 자동으로 온보딩 화면으로 전환됨
+                }
             )
         }
     }
@@ -118,7 +125,8 @@ fun ExitApp(
 @Composable
 fun MainScreen(
     appStateViewModel: AppStateViewModel,
-    billingService: BillingService
+    billingService: BillingService,
+    onNavigateToOnboarding: () -> Unit
 ) {
     val selectedTab by appStateViewModel.selectedTab.collectAsState()
     
@@ -140,9 +148,7 @@ fun MainScreen(
                 MainTab.DASHBOARD -> DashboardScreen(viewModel = appStateViewModel)
                 MainTab.SIMULATION -> SimulationScreen(billingService = billingService)
                 MainTab.MENU -> SettingsScreen(
-                    onDeleteAllData = {
-                        // TODO: 데이터 삭제 후 온보딩으로 이동
-                    }
+                    onDeleteAllData = onNavigateToOnboarding
                 )
             }
         }
