@@ -76,13 +76,6 @@ fun CustomNumberKeyboard(
             QuickButton(text = "+100만", onClick = { onQuickAmountClick(1_000_000.0) })
             QuickButton(text = "+1000만", onClick = { onQuickAmountClick(10_000_000.0) })
             QuickButton(text = "+1억", onClick = { onQuickAmountClick(100_000_000.0) })
-            
-            // 초기화 버튼
-            QuickButton(
-                text = "초기화",
-                isDestructive = true,
-                onClick = onResetClick
-            )
         }
         
         // 숫자 키패드
@@ -119,12 +112,12 @@ fun CustomNumberKeyboard(
                 NumberKey("9", onDigitClick, Modifier.weight(1f))
             }
             
-            // Row 4: 00, 0, ←
+            // Row 4: 초기화, 0, ←
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM)
             ) {
-                NumberKey("00", onDigitClick, Modifier.weight(1f))
+                ResetKey(onResetClick, Modifier.weight(1f))
                 NumberKey("0", onDigitClick, Modifier.weight(1f))
                 DeleteKey(onDeleteClick, Modifier.weight(1f))
             }
@@ -183,6 +176,33 @@ private fun DeleteKey(
             text = "←",
             style = ExitTypography.Keypad,
             color = ExitColors.Accent
+        )
+    }
+}
+
+/**
+ * 초기화 키
+ */
+@Composable
+private fun ResetKey(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .height(56.dp)
+            .clip(RoundedCornerShape(ExitRadius.MD))
+            .background(ExitColors.Warning.copy(alpha = 0.15f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(color = ExitColors.Warning)
+            ) { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "C",
+            style = ExitTypography.Keypad,
+            color = ExitColors.Warning
         )
     }
 }

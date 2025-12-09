@@ -402,47 +402,48 @@ private fun AmountEditRow(
     accentColor: Color,
     onEditClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    // 전체 행을 탭 가능한 카드로
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(ExitRadius.MD))
+            .background(accentColor.copy(alpha = 0.08f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(color = accentColor)
+            ) { onEditClick() }
+            .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.SM)
     ) {
-        // 라벨
-        Text(
-            text = label,
-            style = ExitTypography.Caption,
-            color = ExitColors.SecondaryText
-        )
-        
-        // 값 + 직접입력 버튼
         Row(
-            horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM),
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 현재 값
+            // 라벨
             Text(
-                text = valueFormatter(value),
+                text = label,
                 style = ExitTypography.Caption,
-                fontWeight = FontWeight.Bold,
-                color = accentColor
+                color = ExitColors.SecondaryText
             )
             
-            // 직접입력 버튼
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(ExitRadius.SM))
-                    .background(accentColor.copy(alpha = 0.15f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = ripple(color = accentColor)
-                    ) { onEditClick() }
-                    .padding(horizontal = ExitSpacing.SM, vertical = ExitSpacing.XS),
-                contentAlignment = Alignment.Center
+            // 값 + 편집 아이콘
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                // 현재 값 (더 크게)
                 Text(
-                    text = "직접입력",
-                    style = ExitTypography.Caption2,
+                    text = valueFormatter(value),
+                    style = ExitTypography.Body,
+                    fontWeight = FontWeight.Bold,
                     color = accentColor
+                )
+                
+                // 편집 표시
+                Text(
+                    text = "▸",
+                    style = ExitTypography.Body,
+                    color = accentColor.copy(alpha = 0.6f)
                 )
             }
         }
