@@ -50,8 +50,7 @@ fun SimulationSetupView(
     var editingMonthlyInvestment by remember { mutableFloatStateOf(userProfile?.monthlyInvestment?.toFloat() ?: 500_000f) }
     var editingMonthlyIncome by remember { mutableFloatStateOf(userProfile?.desiredMonthlyIncome?.toFloat() ?: 3_000_000f) }
     var editingPreReturnRate by remember { mutableFloatStateOf(userProfile?.preRetirementReturnRate?.toFloat() ?: 6.5f) }
-    var editingPostReturnRate by remember { mutableFloatStateOf(userProfile?.postRetirementReturnRate?.toFloat() ?: 5.0f) }
-    var editingInflationRate by remember { mutableFloatStateOf(userProfile?.inflationRate?.toFloat() ?: 2.5f) }
+    var editingPostReturnRate by remember { mutableFloatStateOf(userProfile?.postRetirementReturnRate?.toFloat() ?: 4.0f) }
     var failureThreshold by remember { mutableDoubleStateOf(1.1) }
     
     // Sync with actual values when profile changes
@@ -62,7 +61,6 @@ fun SimulationSetupView(
             editingMonthlyIncome = it.desiredMonthlyIncome.toFloat()
             editingPreReturnRate = it.preRetirementReturnRate.toFloat()
             editingPostReturnRate = it.postRetirementReturnRate.toFloat()
-            editingInflationRate = it.inflationRate.toFloat()
         }
     }
     
@@ -97,9 +95,7 @@ fun SimulationSetupView(
                 preReturnRate = editingPreReturnRate,
                 onPreReturnRateChange = { editingPreReturnRate = it },
                 postReturnRate = editingPostReturnRate,
-                onPostReturnRateChange = { editingPostReturnRate = it },
-                inflationRate = editingInflationRate,
-                onInflationRateChange = { editingInflationRate = it }
+                onPostReturnRateChange = { editingPostReturnRate = it }
             )
             
             // 실패 조건 섹션
@@ -110,15 +106,13 @@ fun SimulationSetupView(
                 monthlyInvestment = editingMonthlyInvestment.toDouble(),
                 monthlyIncome = editingMonthlyIncome.toDouble(),
                 preReturnRate = editingPreReturnRate.toDouble(),
-                postReturnRate = editingPostReturnRate.toDouble(),
-                inflationRate = editingInflationRate.toDouble()
+                postReturnRate = editingPostReturnRate.toDouble()
             )
             
             // 시뮬레이션 요약
             SimulationSummarySection(
                 monthlyIncome = editingMonthlyIncome.toDouble(),
                 postReturnRate = editingPostReturnRate.toDouble(),
-                inflationRate = editingInflationRate.toDouble(),
                 preReturnRate = editingPreReturnRate.toDouble()
             )
         }
@@ -132,8 +126,7 @@ fun SimulationSetupView(
                     desiredMonthlyIncome = editingMonthlyIncome.toDouble(),
                     monthlyInvestment = editingMonthlyInvestment.toDouble(),
                     preRetirementReturnRate = editingPreReturnRate.toDouble(),
-                    postRetirementReturnRate = editingPostReturnRate.toDouble(),
-                    inflationRate = editingInflationRate.toDouble()
+                    postRetirementReturnRate = editingPostReturnRate.toDouble()
                 )
                 
                 // 2. 시뮬레이션 파라미터 설정
@@ -147,8 +140,7 @@ fun SimulationSetupView(
                     overrideMonthlyInvestment = editingMonthlyInvestment.toDouble(),
                     overrideDesiredMonthlyIncome = editingMonthlyIncome.toDouble(),
                     overridePreReturnRate = editingPreReturnRate.toDouble(),
-                    overridePostReturnRate = editingPostReturnRate.toDouble(),
-                    overrideInflationRate = editingInflationRate.toDouble()
+                    overridePostReturnRate = editingPostReturnRate.toDouble()
                 )
                 onStart()
             }
@@ -319,9 +311,7 @@ private fun ReturnRateSection(
     preReturnRate: Float,
     onPreReturnRateChange: (Float) -> Unit,
     postReturnRate: Float,
-    onPostReturnRateChange: (Float) -> Unit,
-    inflationRate: Float,
-    onInflationRateChange: (Float) -> Unit
+    onPostReturnRateChange: (Float) -> Unit
 ) {
     Column(
         modifier = Modifier.padding(horizontal = ExitSpacing.MD),
@@ -348,7 +338,7 @@ private fun ReturnRateSection(
                 step = 0.5f
             )
             
-            // 은퇴 후 수익률
+            // 은퇴 후 수익률 (물가상승률 반영하여 설정)
             ExitSlider(
                 value = postReturnRate,
                 onValueChange = onPostReturnRateChange,
@@ -357,19 +347,6 @@ private fun ReturnRateSection(
                 valueFormatter = { String.format("%.1f%%", it) },
                 accentColor = ExitColors.Caution,
                 step = 0.5f
-            )
-            
-            HorizontalDivider(color = ExitColors.Divider)
-            
-            // 물가 상승률
-            ExitSlider(
-                value = inflationRate,
-                onValueChange = onInflationRateChange,
-                valueRange = 0f..10f,
-                label = "물가 상승률",
-                valueFormatter = { String.format("%.1f%%", it) },
-                accentColor = ExitColors.Warning,
-                step = 0.1f
             )
         }
     }
@@ -385,13 +362,11 @@ private fun FailureThresholdSection(
     monthlyInvestment: Double,
     monthlyIncome: Double,
     preReturnRate: Double,
-    postReturnRate: Double,
-    inflationRate: Double
+    postReturnRate: Double
 ) {
     val targetAsset = RetirementCalculator.calculateTargetAssets(
         desiredMonthlyIncome = monthlyIncome,
-        postRetirementReturnRate = postReturnRate,
-        inflationRate = inflationRate
+        postRetirementReturnRate = postReturnRate
     )
     
     val originalMonths = RetirementCalculator.calculateMonthsToRetirement(
@@ -527,13 +502,11 @@ private fun FailureOptionButton(
 private fun SimulationSummarySection(
     monthlyIncome: Double,
     postReturnRate: Double,
-    inflationRate: Double,
     preReturnRate: Double
 ) {
     val targetAsset = RetirementCalculator.calculateTargetAssets(
         desiredMonthlyIncome = monthlyIncome,
-        postRetirementReturnRate = postReturnRate,
-        inflationRate = inflationRate
+        postRetirementReturnRate = postReturnRate
     )
     val preVolatility = SimulationViewModel.calculateVolatility(preReturnRate)
     val postVolatility = SimulationViewModel.calculateVolatility(postReturnRate)

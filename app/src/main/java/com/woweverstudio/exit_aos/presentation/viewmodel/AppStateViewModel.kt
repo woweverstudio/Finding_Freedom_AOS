@@ -185,8 +185,7 @@ class AppStateViewModel @Inject constructor(
         desiredMonthlyIncome: Double? = null,
         monthlyInvestment: Double? = null,
         preRetirementReturnRate: Double? = null,
-        postRetirementReturnRate: Double? = null,
-        inflationRate: Double? = null
+        postRetirementReturnRate: Double? = null
     ) {
         viewModelScope.launch {
             val profile = _userProfile.value ?: return@launch
@@ -195,8 +194,7 @@ class AppStateViewModel @Inject constructor(
                 desiredMonthlyIncome = desiredMonthlyIncome,
                 monthlyInvestment = monthlyInvestment,
                 preRetirementReturnRate = preRetirementReturnRate,
-                postRetirementReturnRate = postRetirementReturnRate,
-                inflationRate = inflationRate
+                postRetirementReturnRate = postRetirementReturnRate
             )
             
             repository.updateUserProfile(updatedProfile)

@@ -22,11 +22,8 @@ data class UserProfile(
     /** 은퇴 전 연 목표 수익률 (%) */
     val preRetirementReturnRate: Double = 6.5,
     
-    /** 은퇴 후 연 목표 수익률 (%) */
-    val postRetirementReturnRate: Double = 5.0,
-    
-    /** 예상 물가 상승률 (%) */
-    val inflationRate: Double = 2.5,
+    /** 은퇴 후 연 목표 수익률 (%) - 물가상승률을 고려하여 사용자가 직접 설정 */
+    val postRetirementReturnRate: Double = 4.0,
     
     /** 온보딩 완료 여부 */
     val hasCompletedOnboarding: Boolean = false,
@@ -44,14 +41,12 @@ data class UserProfile(
         desiredMonthlyIncome: Double? = null,
         monthlyInvestment: Double? = null,
         preRetirementReturnRate: Double? = null,
-        postRetirementReturnRate: Double? = null,
-        inflationRate: Double? = null
+        postRetirementReturnRate: Double? = null
     ): UserProfile = copy(
         desiredMonthlyIncome = desiredMonthlyIncome ?: this.desiredMonthlyIncome,
         monthlyInvestment = monthlyInvestment ?: this.monthlyInvestment,
         preRetirementReturnRate = preRetirementReturnRate ?: this.preRetirementReturnRate,
         postRetirementReturnRate = postRetirementReturnRate ?: this.postRetirementReturnRate,
-        inflationRate = inflationRate ?: this.inflationRate,
         updatedAt = Date()
     )
 }

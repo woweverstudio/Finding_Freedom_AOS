@@ -466,8 +466,7 @@ private fun RetirementReadyHeader(
         if (userProfile != null) {
             val requiredRate = RetirementCalculator.calculateRequiredReturnRate(
                 currentAssets = currentAssetAmount,
-                desiredMonthlyIncome = userProfile.desiredMonthlyIncome,
-                inflationRate = userProfile.inflationRate
+                desiredMonthlyIncome = userProfile.desiredMonthlyIncome
             )
             
             Column(

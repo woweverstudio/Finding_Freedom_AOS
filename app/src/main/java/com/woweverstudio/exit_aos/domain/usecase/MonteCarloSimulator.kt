@@ -380,8 +380,7 @@ object MonteCarloSimulator {
     ): MonteCarloResult {
         val targetAsset = RetirementCalculator.calculateTargetAssets(
             desiredMonthlyIncome = profile.desiredMonthlyIncome,
-            postRetirementReturnRate = profile.postRetirementReturnRate,
-            inflationRate = profile.inflationRate
+            postRetirementReturnRate = profile.postRetirementReturnRate
         )
         
         return simulate(

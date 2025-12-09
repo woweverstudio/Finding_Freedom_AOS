@@ -37,8 +37,7 @@ fun SimulationInfoCard(
 ) {
     val targetAsset = RetirementCalculator.calculateTargetAssets(
         desiredMonthlyIncome = userProfile.desiredMonthlyIncome,
-        postRetirementReturnRate = userProfile.postRetirementReturnRate,
-        inflationRate = userProfile.inflationRate
+        postRetirementReturnRate = userProfile.postRetirementReturnRate
     )
     
     val preRetirementVolatility = SimulationViewModel.calculateVolatility(userProfile.preRetirementReturnRate)
@@ -92,7 +91,6 @@ fun SimulationInfoCard(
         InfoSection(title = "은퇴 후 시뮬레이션") {
             InfoRow(label = "목표 수익률", value = String.format("%.1f%%", userProfile.postRetirementReturnRate))
             InfoRow(label = "수익률 변동성", value = String.format("%.1f%%", postRetirementVolatility), valueColor = ExitColors.SecondaryText)
-            InfoRow(label = "물가 상승률", value = String.format("%.1f%%", userProfile.inflationRate))
         }
         
         // 시뮬레이션 결과

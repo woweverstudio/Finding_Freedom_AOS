@@ -123,8 +123,7 @@ private fun AssetLineChart(
     
     val targetAsset = RetirementCalculator.calculateTargetAssets(
         desiredMonthlyIncome = userProfile.desiredMonthlyIncome,
-        postRetirementReturnRate = userProfile.postRetirementReturnRate,
-        inflationRate = userProfile.inflationRate
+        postRetirementReturnRate = userProfile.postRetirementReturnRate
     )
     
     // 최대값 계산
@@ -507,8 +506,7 @@ private fun SimulationConditionSection(
 ) {
     val targetAsset = RetirementCalculator.calculateTargetAssets(
         desiredMonthlyIncome = userProfile.desiredMonthlyIncome,
-        postRetirementReturnRate = userProfile.postRetirementReturnRate,
-        inflationRate = userProfile.inflationRate
+        postRetirementReturnRate = userProfile.postRetirementReturnRate
     )
     
     Column(

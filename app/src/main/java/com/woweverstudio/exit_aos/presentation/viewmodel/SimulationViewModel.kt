@@ -129,8 +129,7 @@ class SimulationViewModel @Inject constructor(
             val profile = _userProfile.value ?: return 0.0
             return RetirementCalculator.calculateTargetAssets(
                 desiredMonthlyIncome = profile.desiredMonthlyIncome,
-                postRetirementReturnRate = profile.postRetirementReturnRate,
-                inflationRate = profile.inflationRate
+                postRetirementReturnRate = profile.postRetirementReturnRate
             )
         }
     
@@ -193,8 +192,7 @@ class SimulationViewModel @Inject constructor(
         overrideMonthlyInvestment: Double? = null,
         overrideDesiredMonthlyIncome: Double? = null,
         overridePreReturnRate: Double? = null,
-        overridePostReturnRate: Double? = null,
-        overrideInflationRate: Double? = null
+        overridePostReturnRate: Double? = null
     ) {
         val profile = _userProfile.value ?: return
         
@@ -210,7 +208,6 @@ class SimulationViewModel @Inject constructor(
                 val desiredMonthlyIncome = overrideDesiredMonthlyIncome ?: profile.desiredMonthlyIncome
                 val preReturnRate = overridePreReturnRate ?: profile.preRetirementReturnRate
                 val postReturnRate = overridePostReturnRate ?: profile.postRetirementReturnRate
-                val inflationRate = overrideInflationRate ?: profile.inflationRate
                 
                 val simCount = _simulationCount.value
                 val preRetirementVolatility = effectiveVolatility
@@ -218,8 +215,7 @@ class SimulationViewModel @Inject constructor(
                 
                 val targetAsset = RetirementCalculator.calculateTargetAssets(
                     desiredMonthlyIncome = desiredMonthlyIncome,
-                    postRetirementReturnRate = postReturnRate,
-                    inflationRate = inflationRate
+                    postRetirementReturnRate = postReturnRate
                 )
                 
                 val originalDDay = RetirementCalculator.calculateMonthsToRetirement(
@@ -347,8 +343,7 @@ class SimulationViewModel @Inject constructor(
         desiredMonthlyIncome: Double? = null,
         monthlyInvestment: Double? = null,
         preRetirementReturnRate: Double? = null,
-        postRetirementReturnRate: Double? = null,
-        inflationRate: Double? = null
+        postRetirementReturnRate: Double? = null
     ) {
         viewModelScope.launch {
             // 현재 자산 업데이트
@@ -361,8 +356,7 @@ class SimulationViewModel @Inject constructor(
                 desiredMonthlyIncome = desiredMonthlyIncome,
                 monthlyInvestment = monthlyInvestment,
                 preRetirementReturnRate = preRetirementReturnRate,
-                postRetirementReturnRate = postRetirementReturnRate,
-                inflationRate = inflationRate
+                postRetirementReturnRate = postRetirementReturnRate
             )
             
             repository.updateUserProfile(updatedProfile)

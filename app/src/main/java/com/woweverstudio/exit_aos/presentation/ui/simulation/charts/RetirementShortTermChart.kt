@@ -48,8 +48,7 @@ fun RetirementShortTermChart(
     val startingAsset = result.medianPath.yearlyAssets.firstOrNull() 
         ?: RetirementCalculator.calculateTargetAssets(
             desiredMonthlyIncome = userProfile.desiredMonthlyIncome,
-            postRetirementReturnRate = userProfile.postRetirementReturnRate,
-            inflationRate = userProfile.inflationRate
+            postRetirementReturnRate = userProfile.postRetirementReturnRate
         )
     
     // 단기 데이터 (0~10년, 최대 11개 포인트)
@@ -657,7 +656,7 @@ private fun SimulationConditionSection(
                 modifier = Modifier.weight(1f)
             )
             DataItem(
-                label = "은퇴 후 수익률",
+                label = "수익률",
                 value = String.format("%.1f%%", userProfile.postRetirementReturnRate),
                 modifier = Modifier.weight(1f)
             )
