@@ -96,6 +96,10 @@ dependencies {
     implementation(libs.vico.compose)
     implementation(libs.vico.compose.m3)
 
+    // Google Play Billing
+    implementation(libs.play.billing)
+    implementation(libs.play.billing.ktx)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

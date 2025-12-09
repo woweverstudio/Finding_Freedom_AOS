@@ -1,6 +1,10 @@
 package com.woweverstudio.exit_aos.domain.usecase
 
 import com.woweverstudio.exit_aos.domain.model.UserProfile
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.exp
@@ -89,22 +93,17 @@ typealias RetirementProgressCallback = (completed: Int) -> Unit
 
 /**
  * 은퇴 후 자산 변화 시뮬레이터
+ * iOS와 동일한 로직 + 병렬 처리로 성능 최적화
  */
 object RetirementSimulator {
     
+    // 병렬 처리를 위한 코어 수
+    private val parallelism = Runtime.getRuntime().availableProcessors().coerceIn(2, 8)
+    
     /**
-     * 은퇴 후 시뮬레이션 실행
-     * 
-     * @param initialAsset 초기 자산 (목표 자산)
-     * @param monthlySpending 월 지출액 (희망 월 수입)
-     * @param annualReturn 은퇴 후 연 수익률 (%)
-     * @param volatility 수익률 변동성 (%)
-     * @param years 시뮬레이션 기간 (년)
-     * @param simulationCount 시뮬레이션 횟수
-     * @param progressCallback 진행률 콜백
-     * @return 시뮬레이션 결과
+     * 은퇴 후 시뮬레이션 실행 (병렬 처리)
      */
-    fun simulate(
+    suspend fun simulate(
         initialAsset: Double,
         monthlySpending: Double,
         annualReturn: Double,
@@ -112,32 +111,48 @@ object RetirementSimulator {
         years: Int = 40,
         simulationCount: Int = 30_000,
         progressCallback: RetirementProgressCallback? = null
-    ): RetirementSimulationResult {
-        val allPaths = mutableListOf<RetirementPath>()
-        
-        // 월 수익률 파라미터 (로그 정규분포)
+    ): RetirementSimulationResult = coroutineScope {
+        // 월 수익률 파라미터 미리 계산
         val monthlyMean = ln(1 + annualReturn / 100) / 12.0
         val monthlyVolatility = (volatility / 100) / sqrt(12.0)
         
-        // 업데이트 간격 (200번마다 한 번씩 콜백)
-        val updateInterval = 200
+        // 청크 크기 계산
+        val chunkSize = simulationCount / parallelism
+        val completed = java.util.concurrent.atomic.AtomicInteger(0)
         
-        for (i in 0 until simulationCount) {
-            val path = runSingleSimulation(
-                initialAsset = initialAsset,
-                monthlySpending = monthlySpending,
-                monthlyMean = monthlyMean,
-                monthlyVolatility = monthlyVolatility,
-                years = years
-            )
-            
-            allPaths.add(path)
-            
-            // 진행률 콜백
-            if ((i + 1) % updateInterval == 0 || i == simulationCount - 1) {
-                progressCallback?.invoke(i + 1)
+        // 병렬로 시뮬레이션 실행
+        val allPaths = (0 until parallelism).map { chunkIndex ->
+            async(Dispatchers.Default) {
+                val random = Random(System.nanoTime() + chunkIndex)
+                val startIndex = chunkIndex * chunkSize
+                val endIndex = if (chunkIndex == parallelism - 1) simulationCount else startIndex + chunkSize
+                val chunkCount = endIndex - startIndex
+                
+                val paths = ArrayList<RetirementPath>(chunkCount)
+                
+                for (i in 0 until chunkCount) {
+                    val path = runSingleSimulation(
+                        initialAsset = initialAsset,
+                        monthlySpending = monthlySpending,
+                        monthlyMean = monthlyMean,
+                        monthlyVolatility = monthlyVolatility,
+                        years = years,
+                        random = random
+                    )
+                    paths.add(path)
+                    
+                    // 진행률 콜백 (300번마다)
+                    val totalCompleted = completed.incrementAndGet()
+                    if (totalCompleted % 300 == 0) {
+                        progressCallback?.invoke(totalCompleted)
+                    }
+                }
+                paths
             }
-        }
+        }.awaitAll().flatten()
+        
+        // 최종 콜백
+        progressCallback?.invoke(simulationCount)
         
         // 기존 예측 (변동성 없음)
         val deterministicPath = calculateDeterministicPath(
@@ -167,7 +182,7 @@ object RetirementSimulator {
         val shortTermLuckyPath = sortedBy10Years[simulationCount * 70 / 100]
         val shortTermVeryBestPath = sortedBy10Years[simulationCount * 90 / 100]
         
-        return RetirementSimulationResult(
+        RetirementSimulationResult(
             veryBestPath = veryBestPath,
             luckyPath = luckyPath,
             medianPath = medianPath,
@@ -193,97 +208,74 @@ object RetirementSimulator {
         monthlySpending: Double,
         monthlyMean: Double,
         monthlyVolatility: Double,
-        years: Int
+        years: Int,
+        random: Random
     ): RetirementPath {
-        val yearlyAssets = mutableListOf(initialAsset)
+        val yearlyAssets = DoubleArray(years + 1)
+        yearlyAssets[0] = initialAsset
+        
         var currentAsset = initialAsset
         var depletionYear: Int? = null
         
         for (year in 1..years) {
-            // 12개월 시뮬레이션
-            for (month in 1..12) {
-                // 월 수익률 샘플링 (Box-Muller 변환)
-                val monthlyReturn = sampleNormalDistribution(
-                    mean = monthlyMean,
-                    standardDeviation = monthlyVolatility
-                )
+            // 12개월 시뮬레이션 (인라인 최적화)
+            repeat(12) {
+                // Box-Muller 변환
+                val u1 = random.nextDouble()
+                val u2 = random.nextDouble()
+                val z0 = sqrt(-2.0 * ln(u1)) * cos(2.0 * PI * u2)
+                val monthlyReturn = monthlyMean + z0 * monthlyVolatility
                 
-                // 수익 적용 (로그 정규분포)
-                currentAsset *= exp(monthlyReturn)
-                
-                // 지출
-                currentAsset -= monthlySpending
+                currentAsset = currentAsset * exp(monthlyReturn) - monthlySpending
             }
             
-            yearlyAssets.add(max(0.0, currentAsset))
+            yearlyAssets[year] = max(0.0, currentAsset)
             
-            // 자산 소진 체크
             if (currentAsset <= 0 && depletionYear == null) {
                 depletionYear = year
             }
         }
         
-        return RetirementPath(yearlyAssets = yearlyAssets, depletionYear = depletionYear)
+        return RetirementPath(yearlyAssets = yearlyAssets.toList(), depletionYear = depletionYear)
     }
     
     // MARK: - Deterministic Calculation
     
-    /**
-     * 확정적 계산 (변동성 없음)
-     */
     private fun calculateDeterministicPath(
         initialAsset: Double,
         monthlySpending: Double,
         annualReturn: Double,
         years: Int
     ): RetirementPath {
-        val yearlyAssets = mutableListOf(initialAsset)
+        val yearlyAssets = DoubleArray(years + 1)
+        yearlyAssets[0] = initialAsset
+        
         var currentAsset = initialAsset
-        val monthlyReturn = annualReturn / 100 / 12
+        val monthlyReturnFactor = 1 + annualReturn / 100 / 12
         var depletionYear: Int? = null
         
         for (year in 1..years) {
-            for (month in 1..12) {
-                currentAsset *= (1 + monthlyReturn)
-                currentAsset -= monthlySpending
+            repeat(12) {
+                currentAsset = currentAsset * monthlyReturnFactor - monthlySpending
             }
-            yearlyAssets.add(max(0.0, currentAsset))
+            yearlyAssets[year] = max(0.0, currentAsset)
             
             if (currentAsset <= 0 && depletionYear == null) {
                 depletionYear = year
             }
         }
         
-        return RetirementPath(yearlyAssets = yearlyAssets, depletionYear = depletionYear)
-    }
-    
-    // MARK: - Random Sampling
-    
-    /**
-     * 정규분포에서 샘플링 (Box-Muller 변환)
-     */
-    private fun sampleNormalDistribution(
-        mean: Double,
-        standardDeviation: Double
-    ): Double {
-        val u1 = Random.nextDouble()
-        val u2 = Random.nextDouble()
-        val z0 = sqrt(-2.0 * ln(u1)) * cos(2.0 * PI * u2)
-        return mean + z0 * standardDeviation
+        return RetirementPath(yearlyAssets = yearlyAssets.toList(), depletionYear = depletionYear)
     }
     
     // MARK: - UserProfile-based Simulation
     
-    /**
-     * UserProfile 기반 시뮬레이션 (편의 메서드)
-     */
-    fun simulate(
+    suspend fun simulate(
         profile: UserProfile,
         volatility: Double = 15.0,
         simulationCount: Int = 30_000,
         progressCallback: RetirementProgressCallback? = null
     ): RetirementSimulationResult {
-        // 목표 자산 계산
         val targetAsset = RetirementCalculator.calculateTargetAssets(
             desiredMonthlyIncome = profile.desiredMonthlyIncome,
             postRetirementReturnRate = profile.postRetirementReturnRate,
@@ -300,4 +292,3 @@ object RetirementSimulator {
         )
     }
 }
-

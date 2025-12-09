@@ -17,6 +17,7 @@ kotlinxSerializationJson = "1.7.3"
 coroutines = "1.9.0"
 ksp = "2.0.21-1.0.28"
 vicoCompose = "2.0.0-beta.2"
+playBilling = "7.1.1"
 
 [libraries]
 # AndroidX Core
@@ -64,6 +65,10 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 # Vico Charts
 vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vicoCompose" }
 vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vicoCompose" }
+
+# Google Play Billing
+play-billing = { group = "com.android.billingclient", name = "billing", version.ref = "playBilling" }
+play-billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "playBilling" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

@@ -10,6 +10,7 @@ import com.woweverstudio.exit_aos.domain.usecase.MonteCarloSimulator
 import com.woweverstudio.exit_aos.domain.usecase.RetirementCalculator
 import com.woweverstudio.exit_aos.domain.usecase.RetirementSimulationResult
 import com.woweverstudio.exit_aos.domain.usecase.RetirementSimulator
+import com.woweverstudio.exit_aos.presentation.ui.simulation.charts.YearDistributionData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -101,9 +102,13 @@ class SimulationViewModel @Inject constructor(
     private val _failureThresholdMultiplier = MutableStateFlow(1.1)
     val failureThresholdMultiplier: StateFlow<Double> = _failureThresholdMultiplier.asStateFlow()
     
+    /** 현재 자산 금액 (StateFlow) */
+    private val _currentAssetAmount = MutableStateFlow(0.0)
+    val currentAssetAmount: StateFlow<Double> = _currentAssetAmount.asStateFlow()
+    
     // MARK: - Computed Properties
     
-    val currentAssetAmount: Double
+    val currentAssetAmountValue: Double
         get() = _currentAsset.value?.amount ?: 0.0
     
     val effectiveVolatility: Double
@@ -112,7 +117,7 @@ class SimulationViewModel @Inject constructor(
     val originalDDayMonths: Int
         get() {
             val profile = _userProfile.value ?: return 0
-            val result = RetirementCalculator.calculate(profile, currentAssetAmount)
+            val result = RetirementCalculator.calculate(profile, currentAssetAmountValue)
             return result.monthsToRetirement
         }
     
@@ -140,6 +145,20 @@ class SimulationViewModel @Inject constructor(
             )
         }
     
+    /** 연도별 분포 데이터 (히스토그램용) */
+    val yearDistributionData: List<YearDistributionData>
+        get() {
+            val result = _monteCarloResult.value ?: return emptyList()
+            val distribution = result.yearDistribution()
+            return distribution.entries
+                .sortedBy { it.key }
+                .map { YearDistributionData(it.key, it.value) }
+        }
+    
+    /** 대표 경로 */
+    val representativePaths: com.woweverstudio.exit_aos.domain.usecase.RepresentativePaths?
+        get() = _monteCarloResult.value?.representativePaths
+    
     // MARK: - Initialization
     
     init {
@@ -151,6 +170,7 @@ class SimulationViewModel @Inject constructor(
             launch {
                 repository.getAsset().collect { asset ->
                     _currentAsset.value = asset
+                    _currentAssetAmount.value = asset?.amount ?: 0.0
                 }
             }
             
@@ -164,73 +184,111 @@ class SimulationViewModel @Inject constructor(
     
     // MARK: - Simulation
     
-    fun runAllSimulations() {
+    /**
+     * 시뮬레이션 실행 (설정값 직접 전달 가능)
+     * SimulationSetupView에서 편집한 값을 바로 사용하기 위해 파라미터로 받음
+     */
+    fun runAllSimulations(
+        overrideCurrentAsset: Double? = null,
+        overrideMonthlyInvestment: Double? = null,
+        overrideDesiredMonthlyIncome: Double? = null,
+        overridePreReturnRate: Double? = null,
+        overridePostReturnRate: Double? = null,
+        overrideInflationRate: Double? = null
+    ) {
         val profile = _userProfile.value ?: return
         
         viewModelScope.launch {
-            _isSimulating.value = true
-            _simulationProgress.value = 0f
-            _simulationPhase.value = SimulationPhase.PRE_RETIREMENT
-            
-            val currentAsset = currentAssetAmount
-            val simCount = _simulationCount.value
-            val preRetirementVolatility = effectiveVolatility
-            val postRetirementVolatility = calculateVolatility(profile.postRetirementReturnRate)
-            
-            val targetAsset = RetirementCalculator.calculateTargetAssets(
-                desiredMonthlyIncome = profile.desiredMonthlyIncome,
-                postRetirementReturnRate = profile.postRetirementReturnRate,
-                inflationRate = profile.inflationRate
-            )
-            
-            val originalDDay = RetirementCalculator.calculateMonthsToRetirement(
-                currentAssets = currentAsset,
-                targetAssets = targetAsset,
-                monthlyInvestment = profile.monthlyInvestment,
-                annualReturnRate = profile.preRetirementReturnRate
-            )
-            
-            val maxMonthsForSimulation = (originalDDay * _failureThresholdMultiplier.value).toInt()
-            
-            // Phase 1: 목표 달성까지 시뮬레이션
-            val monteCarloResult = withContext(Dispatchers.Default) {
-                MonteCarloSimulator.simulate(
-                    initialAsset = currentAsset,
-                    monthlyInvestment = profile.monthlyInvestment,
-                    targetAsset = targetAsset,
-                    meanReturn = profile.preRetirementReturnRate,
-                    volatility = preRetirementVolatility,
-                    simulationCount = simCount,
-                    maxMonths = maxMonthsForSimulation,
-                    trackPaths = true
-                ) { completed, _, _ ->
-                    val progress = completed.toFloat() / simCount * 0.5f
-                    _simulationProgress.value = progress
+            try {
+                _isSimulating.value = true
+                _simulationProgress.value = 0f
+                _simulationPhase.value = SimulationPhase.PRE_RETIREMENT
+                
+                // override 값이 있으면 사용, 없으면 기존 값 사용
+                val currentAsset = overrideCurrentAsset ?: currentAssetAmountValue
+                val monthlyInvestment = overrideMonthlyInvestment ?: profile.monthlyInvestment
+                val desiredMonthlyIncome = overrideDesiredMonthlyIncome ?: profile.desiredMonthlyIncome
+                val preReturnRate = overridePreReturnRate ?: profile.preRetirementReturnRate
+                val postReturnRate = overridePostReturnRate ?: profile.postRetirementReturnRate
+                val inflationRate = overrideInflationRate ?: profile.inflationRate
+                
+                val simCount = _simulationCount.value
+                val preRetirementVolatility = effectiveVolatility
+                val postRetirementVolatility = calculateVolatility(postReturnRate)
+                
+                val targetAsset = RetirementCalculator.calculateTargetAssets(
+                    desiredMonthlyIncome = desiredMonthlyIncome,
+                    postRetirementReturnRate = postReturnRate,
+                    inflationRate = inflationRate
+                )
+                
+                val originalDDay = RetirementCalculator.calculateMonthsToRetirement(
+                    currentAssets = currentAsset,
+                    targetAssets = targetAsset,
+                    monthlyInvestment = monthlyInvestment,
+                    annualReturnRate = preReturnRate
+                )
+                
+                // 이미 은퇴 가능한 경우 (originalDDay == 0)
+                val isAlreadyRetired = originalDDay == 0 || currentAsset >= targetAsset
+                
+                // maxMonths가 0이면 최소 12개월로 설정 (0으로 나누기 방지)
+                val maxMonthsForSimulation = if (isAlreadyRetired) {
+                    12 // 최소값
+                } else {
+                    (originalDDay * _failureThresholdMultiplier.value).toInt().coerceAtLeast(12)
                 }
-            }
-            
-            _monteCarloResult.value = monteCarloResult
-            _simulationPhase.value = SimulationPhase.POST_RETIREMENT
-            
-            // Phase 2: 은퇴 후 시뮬레이션
-            val retirementStartAsset = if (originalDDay == 0) currentAsset else targetAsset
-            
-            val retirementResult = withContext(Dispatchers.Default) {
-                RetirementSimulator.simulate(
+                
+                // Phase 1: 목표 달성까지 시뮬레이션 (이미 은퇴 가능하면 건너뜀)
+                val monteCarloResult = if (isAlreadyRetired) {
+                    // 이미 은퇴 가능: 100% 성공으로 더미 결과 생성
+                    MonteCarloResult(
+                        successRate = 1.0,
+                        successMonthsDistribution = listOf(0),
+                        failureCount = 0,
+                        totalSimulations = simCount,
+                        representativePaths = null
+                    )
+                } else {
+                    MonteCarloSimulator.simulate(
+                        initialAsset = currentAsset,
+                        monthlyInvestment = monthlyInvestment,
+                        targetAsset = targetAsset,
+                        meanReturn = preReturnRate,
+                        volatility = preRetirementVolatility,
+                        simulationCount = simCount,
+                        maxMonths = maxMonthsForSimulation,
+                        trackPaths = true
+                    ) { completed, _, _ ->
+                        _simulationProgress.value = completed.toFloat() / simCount * 0.5f
+                    }
+                }
+                
+                _monteCarloResult.value = monteCarloResult
+                _simulationPhase.value = SimulationPhase.POST_RETIREMENT
+                
+                // Phase 2: 은퇴 후 시뮬레이션
+                val retirementStartAsset = if (isAlreadyRetired) currentAsset else targetAsset
+                
+                val retirementResult = RetirementSimulator.simulate(
                     initialAsset = retirementStartAsset,
-                    monthlySpending = profile.desiredMonthlyIncome,
-                    annualReturn = profile.postRetirementReturnRate,
+                    monthlySpending = desiredMonthlyIncome,
+                    annualReturn = postReturnRate,
                     volatility = postRetirementVolatility,
                     simulationCount = simCount
                 ) { completed ->
-                    val progress = 0.5f + completed.toFloat() / simCount * 0.5f
-                    _simulationProgress.value = progress
+                    _simulationProgress.value = 0.5f + completed.toFloat() / simCount * 0.5f
                 }
+                
+                _retirementResult.value = retirementResult
+                _simulationPhase.value = SimulationPhase.IDLE
+            } catch (e: Exception) {
+                // 에러 로깅 및 안전한 종료
+                e.printStackTrace()
+                _simulationPhase.value = SimulationPhase.IDLE
+            } finally {
+                _isSimulating.value = false
             }
-            
-            _retirementResult.value = retirementResult
-            _simulationPhase.value = SimulationPhase.IDLE
-            _isSimulating.value = false
         }
     }
     
@@ -256,6 +314,59 @@ class SimulationViewModel @Inject constructor(
     
     fun resetFailureThreshold() {
         _failureThresholdMultiplier.value = 1.1
+    }
+    
+    // MARK: - Settings & Asset Update (DB 저장)
+    
+    /**
+     * 현재 자산 업데이트 (DB 저장)
+     */
+    fun updateCurrentAsset(amount: Double) {
+        viewModelScope.launch {
+            val existingAsset = _currentAsset.value
+            
+            if (existingAsset != null) {
+                val updatedAsset = existingAsset.update(amount)
+                repository.updateAsset(updatedAsset)
+            } else {
+                val newAsset = Asset(amount = amount)
+                repository.saveAsset(newAsset)
+            }
+            
+            // StateFlow 즉시 업데이트
+            _currentAssetAmount.value = amount
+        }
+    }
+    
+    /**
+     * 사용자 설정 업데이트 (DB 저장)
+     * DashboardScreen의 PlanHeaderView와 동기화됨
+     */
+    fun updateSettings(
+        currentAsset: Double? = null,
+        desiredMonthlyIncome: Double? = null,
+        monthlyInvestment: Double? = null,
+        preRetirementReturnRate: Double? = null,
+        postRetirementReturnRate: Double? = null,
+        inflationRate: Double? = null
+    ) {
+        viewModelScope.launch {
+            // 현재 자산 업데이트
+            currentAsset?.let { updateCurrentAsset(it) }
+            
+            // 프로필 업데이트
+            val profile = _userProfile.value ?: return@launch
+            
+            val updatedProfile = profile.updateSettings(
+                desiredMonthlyIncome = desiredMonthlyIncome,
+                monthlyInvestment = monthlyInvestment,
+                preRetirementReturnRate = preRetirementReturnRate,
+                postRetirementReturnRate = postRetirementReturnRate,
+                inflationRate = inflationRate
+            )
+            
+            repository.updateUserProfile(updatedProfile)
+        }
     }
     
     // MARK: - Volatility Calculation

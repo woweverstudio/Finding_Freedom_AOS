@@ -38,25 +38,38 @@ import com.woweverstudio.exit_aos.presentation.ui.simulation.SimulationScreen
 import com.woweverstudio.exit_aos.presentation.ui.theme.ExitColors
 import com.woweverstudio.exit_aos.presentation.ui.theme.ExitTheme
 import com.woweverstudio.exit_aos.presentation.ui.theme.ExitTypography
+import com.woweverstudio.exit_aos.data.billing.BillingService
 import com.woweverstudio.exit_aos.presentation.viewmodel.AppStateViewModel
 import com.woweverstudio.exit_aos.presentation.viewmodel.MainTab
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    
+    @Inject
+    lateinit var billingService: BillingService
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             ExitTheme {
-                ExitApp()
+                ExitApp(billingService = billingService)
             }
         }
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        billingService.endConnection()
     }
 }
 
 @Composable
-fun ExitApp() {
+fun ExitApp(
+    billingService: BillingService
+) {
     val appStateViewModel: AppStateViewModel = hiltViewModel()
     val userProfile by appStateViewModel.userProfile.collectAsState()
     
@@ -94,14 +107,18 @@ fun ExitApp() {
         }
         else -> {
             // 메인 화면
-            MainScreen(appStateViewModel = appStateViewModel)
+            MainScreen(
+                appStateViewModel = appStateViewModel,
+                billingService = billingService
+            )
         }
     }
 }
 
 @Composable
 fun MainScreen(
-    appStateViewModel: AppStateViewModel
+    appStateViewModel: AppStateViewModel,
+    billingService: BillingService
 ) {
     val selectedTab by appStateViewModel.selectedTab.collectAsState()
     
@@ -121,7 +138,7 @@ fun MainScreen(
         ) {
             when (selectedTab) {
                 MainTab.DASHBOARD -> DashboardScreen(viewModel = appStateViewModel)
-                MainTab.SIMULATION -> SimulationScreen()
+                MainTab.SIMULATION -> SimulationScreen(billingService = billingService)
                 MainTab.MENU -> SettingsScreen(
                     onDeleteAllData = {
                         // TODO: 데이터 삭제 후 온보딩으로 이동
