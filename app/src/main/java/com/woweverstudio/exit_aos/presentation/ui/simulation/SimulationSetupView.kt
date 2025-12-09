@@ -447,12 +447,12 @@ private fun FailureThresholdSection(
                         imageVector = Icons.Default.Info,
                         contentDescription = null,
                         modifier = Modifier.size(11.dp),
-                        tint = ExitColors.TertiaryText
+                        tint = ExitColors.SecondaryText
                     )
                     Text(
                         text = "목표 ${formatPeriod(originalMonths)} → ${formatPeriod(failureMonths)} 초과 시 실패",
                         style = ExitTypography.Caption2,
-                        color = ExitColors.TertiaryText
+                        color = ExitColors.SecondaryText
                     )
                 }
             }

@@ -226,7 +226,7 @@ object MonteCarloSimulator {
                     
                     // 진행률 콜백 (1000번마다)
                     val totalCompleted = completed.incrementAndGet()
-                    if (totalCompleted % 1000 == 0) {
+                    if (totalCompleted % 200 == 0) {
                         progressCallback?.invoke(totalCompleted, emptyList(), emptyList())
                     }
                 }
