@@ -47,8 +47,8 @@ fun ExitSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
     valueRange: ClosedFloatingPointRange<Float>,
-    label: String,
-    valueFormatter: (Float) -> String,
+    label: String? = null,
+    valueFormatter: ((Float) -> String)? = null,
     accentColor: Color = ExitColors.Accent,
     step: Float? = null,
     modifier: Modifier = Modifier
@@ -77,23 +77,25 @@ fun ExitSlider(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(ExitSpacing.XS)
     ) {
-        // 라벨 + 값 표시
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = label,
-                style = ExitTypography.Caption,
-                color = ExitColors.SecondaryText
-            )
-            Text(
-                text = valueFormatter(value),
-                style = ExitTypography.Caption,
-                fontWeight = FontWeight.Bold,
-                color = accentColor
-            )
+        // 라벨 + 값 표시 (label이 있을 때만)
+        if (label != null && valueFormatter != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = label,
+                    style = ExitTypography.Caption,
+                    color = ExitColors.SecondaryText
+                )
+                Text(
+                    text = valueFormatter(value),
+                    style = ExitTypography.Caption,
+                    fontWeight = FontWeight.Bold,
+                    color = accentColor
+                )
+            }
         }
         
         // 슬라이더 트랙

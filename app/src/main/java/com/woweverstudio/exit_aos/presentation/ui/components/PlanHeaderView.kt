@@ -328,17 +328,6 @@ private fun EditPanel(
             step = 100_000f
         )
         
-        // 은퇴 전 수익률 (0.5씩 증감)
-        ExitSlider(
-            value = editingPreReturnRate,
-            onValueChange = onPreReturnRateChange,
-            valueRange = 0.5f..50f,
-            label = "은퇴 전 수익률",
-            valueFormatter = { String.format("%.1f%%", it) },
-            accentColor = ExitColors.Accent,
-            step = 0.5f
-        )
-        
         // 은퇴 후 희망 월수입 (10만원씩 증감)
         ExitSlider(
             value = editingMonthlyIncome,
@@ -350,15 +339,26 @@ private fun EditPanel(
             step = 100_000f
         )
         
-        // 은퇴 후 수익률 (0.5씩 증감)
-        ExitSlider(
+        // 은퇴 전 수익률 (슬라이더 + 버튼)
+        RateSliderWithButtons(
+            label = "은퇴 전 수익률",
+            value = editingPreReturnRate,
+            onValueChange = onPreReturnRateChange,
+            minValue = 0.5f,
+            maxValue = 50f,
+            step = 0.5f,
+            accentColor = ExitColors.Accent
+        )
+        
+        // 은퇴 후 수익률 (슬라이더 + 버튼)
+        RateSliderWithButtons(
+            label = "은퇴 후 수익률",
             value = editingPostReturnRate,
             onValueChange = onPostReturnRateChange,
-            valueRange = 0.5f..50f,
-            label = "은퇴 후 수익률",
-            valueFormatter = { String.format("%.1f%%", it) },
-            accentColor = ExitColors.Caution,
-            step = 0.5f
+            minValue = 0.5f,
+            maxValue = 50f,
+            step = 0.5f,
+            accentColor = ExitColors.Caution
         )
         
         // 적용 버튼
@@ -442,3 +442,105 @@ private fun AssetAdjustButton(
         )
     }
 }
+
+@Composable
+private fun RateSliderWithButtons(
+    label: String,
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    minValue: Float,
+    maxValue: Float,
+    step: Float,
+    accentColor: Color
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(ExitSpacing.XS)
+    ) {
+        // 라벨 + 값 + 버튼
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 라벨
+            Text(
+                text = label,
+                style = ExitTypography.Caption,
+                color = ExitColors.SecondaryText
+            )
+            
+            // +/- 버튼과 값
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // - 버튼
+                RateButton(
+                    text = "−",
+                    enabled = value > minValue,
+                    accentColor = accentColor,
+                    onClick = { onValueChange(maxOf(value - step, minValue)) }
+                )
+                
+                // 현재 값
+                Text(
+                    text = String.format("%.1f%%", value),
+                    style = ExitTypography.Caption,
+                    fontWeight = FontWeight.Bold,
+                    color = accentColor,
+                    modifier = Modifier.width(52.dp),
+                    textAlign = TextAlign.Center
+                )
+                
+                // + 버튼
+                RateButton(
+                    text = "+",
+                    enabled = value < maxValue,
+                    accentColor = accentColor,
+                    onClick = { onValueChange(minOf(value + step, maxValue)) }
+                )
+            }
+        }
+        
+        // 슬라이더 (라벨 없이)
+        ExitSlider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = minValue..maxValue,
+            accentColor = accentColor,
+            step = step
+        )
+    }
+}
+
+@Composable
+private fun RateButton(
+    text: String,
+    enabled: Boolean,
+    accentColor: Color,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(ExitRadius.SM))
+            .background(
+                if (enabled) accentColor.copy(alpha = 0.15f)
+                else ExitColors.Divider.copy(alpha = 0.5f)
+            )
+            .clickable(
+                enabled = enabled,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(color = accentColor)
+            ) { onClick() }
+            .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.XS),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = ExitTypography.Body,
+            fontWeight = FontWeight.Bold,
+            color = if (enabled) accentColor else ExitColors.TertiaryText
+        )
+    }
+}
+
