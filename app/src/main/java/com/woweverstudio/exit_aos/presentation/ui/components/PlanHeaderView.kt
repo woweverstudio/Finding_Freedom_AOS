@@ -63,6 +63,10 @@ fun PlanHeaderView(
         preRetirementReturnRate: Double,
         postRetirementReturnRate: Double
     ) -> Unit,
+    onAmountEditRequest: (AmountEditType, Double) -> Unit = { _, _ -> },
+    // AmountEditSheet에서 돌아온 결과 (null이면 변경 없음)
+    amountEditResult: Pair<AmountEditType, Double>? = null,
+    onAmountEditResultConsumed: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // 편집 중인 임시 값들
@@ -80,6 +84,18 @@ fun PlanHeaderView(
             editingMonthlyInvestment = it.monthlyInvestment.toFloat()
             editingPreReturnRate = it.preRetirementReturnRate.toFloat()
             editingPostReturnRate = it.postRetirementReturnRate.toFloat()
+        }
+    }
+    
+    // AmountEditSheet 결과 반영 (편집 값만 업데이트, 실제 계산은 적용 시)
+    LaunchedEffect(amountEditResult) {
+        amountEditResult?.let { (type, value) ->
+            when (type) {
+                AmountEditType.CURRENT_ASSET -> editingCurrentAsset = value.toFloat()
+                AmountEditType.MONTHLY_INVESTMENT -> editingMonthlyInvestment = value.toFloat()
+                AmountEditType.DESIRED_MONTHLY_INCOME -> editingMonthlyIncome = value.toFloat()
+            }
+            onAmountEditResultConsumed()
         }
     }
     
@@ -139,6 +155,14 @@ fun PlanHeaderView(
                 onPreReturnRateChange = { editingPreReturnRate = it },
                 editingPostReturnRate = editingPostReturnRate,
                 onPostReturnRateChange = { editingPostReturnRate = it },
+                onAmountEditClick = { type ->
+                    val value = when (type) {
+                        AmountEditType.CURRENT_ASSET -> editingCurrentAsset.toDouble()
+                        AmountEditType.MONTHLY_INVESTMENT -> editingMonthlyInvestment.toDouble()
+                        AmountEditType.DESIRED_MONTHLY_INCOME -> editingMonthlyIncome.toDouble()
+                    }
+                    onAmountEditRequest(type, value)
+                },
                 onApply = {
                     onApplyChanges(
                         editingCurrentAsset.toDouble(),
@@ -302,6 +326,7 @@ private fun EditPanel(
     onPreReturnRateChange: (Float) -> Unit,
     editingPostReturnRate: Float,
     onPostReturnRateChange: (Float) -> Unit,
+    onAmountEditClick: (AmountEditType) -> Unit,
     onApply: () -> Unit
 ) {
     Column(
@@ -311,32 +336,31 @@ private fun EditPanel(
             .padding(bottom = ExitSpacing.MD),
         verticalArrangement = Arrangement.spacedBy(ExitSpacing.MD)
     ) {
-        // 현재 자산 + 조정 버튼
-        AssetSliderWithButtons(
-            value = editingCurrentAsset,
-            onValueChange = onCurrentAssetChange
+        // 현재 자산 (직접입력)
+        AmountEditRow(
+            label = "현재 자산",
+            value = editingCurrentAsset.toDouble(),
+            valueFormatter = { ExitNumberFormatter.formatToEokManWon(it) },
+            accentColor = ExitColors.PrimaryText,
+            onEditClick = { onAmountEditClick(AmountEditType.CURRENT_ASSET) }
         )
         
-        // 매월 투자금액 (10만원씩 증감)
-        ExitSlider(
-            value = editingMonthlyInvestment,
-            onValueChange = onMonthlyInvestmentChange,
-            valueRange = 0f..10_000_000f,
+        // 매월 투자금액 (직접입력)
+        AmountEditRow(
             label = "매월 투자금액",
-            valueFormatter = { ExitNumberFormatter.formatToManWon(it.toDouble()) },
+            value = editingMonthlyInvestment.toDouble(),
+            valueFormatter = { ExitNumberFormatter.formatToManWon(it) },
             accentColor = ExitColors.Positive,
-            step = 100_000f
+            onEditClick = { onAmountEditClick(AmountEditType.MONTHLY_INVESTMENT) }
         )
         
-        // 은퇴 후 희망 월수입 (10만원씩 증감)
-        ExitSlider(
-            value = editingMonthlyIncome,
-            onValueChange = onMonthlyIncomeChange,
-            valueRange = 500_000f..20_000_000f,
+        // 은퇴 후 희망 월수입 (직접입력)
+        AmountEditRow(
             label = "은퇴 후 희망 월수입",
-            valueFormatter = { ExitNumberFormatter.formatToManWon(it.toDouble()) },
+            value = editingMonthlyIncome.toDouble(),
+            valueFormatter = { ExitNumberFormatter.formatToManWon(it) },
             accentColor = ExitColors.Accent,
-            step = 100_000f
+            onEditClick = { onAmountEditClick(AmountEditType.DESIRED_MONTHLY_INCOME) }
         )
         
         // 은퇴 전 수익률 (슬라이더 + 버튼)
@@ -371,75 +395,57 @@ private fun EditPanel(
 }
 
 @Composable
-private fun AssetSliderWithButtons(
-    value: Float,
-    onValueChange: (Float) -> Unit
+private fun AmountEditRow(
+    label: String,
+    value: Double,
+    valueFormatter: (Double) -> String,
+    accentColor: Color,
+    onEditClick: () -> Unit
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(ExitSpacing.XS)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // 커스텀 슬라이더
-        ExitSlider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = 0f..10_000_000_000f,
-            label = "현재 자산",
-            valueFormatter = { ExitNumberFormatter.formatToEokManWon(it.toDouble()) },
-            accentColor = ExitColors.PrimaryText
+        // 라벨
+        Text(
+            text = label,
+            style = ExitTypography.Caption,
+            color = ExitColors.SecondaryText
         )
         
-        // 조정 버튼들
+        // 값 + 직접입력 버튼
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ExitSpacing.XS)
+            horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            AssetAdjustButton(
-                title = "+10만",
-                onClick = { onValueChange(minOf(value + 100_000f, 10_000_000_000f)) },
-                modifier = Modifier.weight(1f)
+            // 현재 값
+            Text(
+                text = valueFormatter(value),
+                style = ExitTypography.Caption,
+                fontWeight = FontWeight.Bold,
+                color = accentColor
             )
-            AssetAdjustButton(
-                title = "+100만",
-                onClick = { onValueChange(minOf(value + 1_000_000f, 10_000_000_000f)) },
-                modifier = Modifier.weight(1f)
-            )
-            AssetAdjustButton(
-                title = "+1000만",
-                onClick = { onValueChange(minOf(value + 10_000_000f, 10_000_000_000f)) },
-                modifier = Modifier.weight(1f)
-            )
-            AssetAdjustButton(
-                title = "+1억",
-                onClick = { onValueChange(minOf(value + 100_000_000f, 10_000_000_000f)) },
-                modifier = Modifier.weight(1f)
-            )
+            
+            // 직접입력 버튼
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(ExitRadius.SM))
+                    .background(accentColor.copy(alpha = 0.15f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = ripple(color = accentColor)
+                    ) { onEditClick() }
+                    .padding(horizontal = ExitSpacing.SM, vertical = ExitSpacing.XS),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "직접입력",
+                    style = ExitTypography.Caption2,
+                    color = accentColor
+                )
+            }
         }
-    }
-}
-
-@Composable
-private fun AssetAdjustButton(
-    title: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(ExitRadius.SM))
-            .background(ExitColors.Accent.copy(alpha = 0.1f))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(color = ExitColors.Accent)
-            ) { onClick() }
-            .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.SM),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = title,
-            style = ExitTypography.Caption,
-            color = ExitColors.Accent,
-            textAlign = TextAlign.Center
-        )
     }
 }
 

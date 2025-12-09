@@ -47,6 +47,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.woweverstudio.exit_aos.presentation.ui.components.AmountEditSheet
+import com.woweverstudio.exit_aos.presentation.ui.components.AmountEditType
 import com.woweverstudio.exit_aos.presentation.ui.components.PlanHeaderView
 import com.woweverstudio.exit_aos.presentation.ui.components.ProgressRingView
 import com.woweverstudio.exit_aos.presentation.ui.theme.ExitColors
@@ -73,6 +75,11 @@ fun DashboardScreen(
     
     // PlanHeader 펼침 상태
     var isHeaderExpanded by rememberSaveable { mutableStateOf(false) }
+    
+    // 금액 편집 시트 상태 (편집 요청)
+    var amountEditState by remember { mutableStateOf<Pair<AmountEditType, Double>?>(null) }
+    // 금액 편집 결과 (PlanHeaderView로 전달)
+    var amountEditResult by remember { mutableStateOf<Pair<AmountEditType, Double>?>(null) }
     
     // 스크롤 상태
     val listState = rememberLazyListState()
@@ -131,70 +138,91 @@ fun DashboardScreen(
         }
     }
     
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(ExitColors.Background)
-            .statusBarsPadding()
-    ) {
-        // 상단 플로팅 헤더 (스크롤과 무관하게 고정)
-        PlanHeaderView(
-            userProfile = userProfile,
-            currentAssetAmount = currentAsset?.amount ?: 0.0,
-            hideAmounts = hideAmounts,
-            isExpanded = isHeaderExpanded,
-            onExpandedChange = { isHeaderExpanded = it },
-            onApplyChanges = { asset, income, investment, preRate, postRate ->
-                viewModel.updateCurrentAsset(asset)
-                viewModel.updateSettings(
-                    desiredMonthlyIncome = income,
-                    monthlyInvestment = investment,
-                    preRetirementReturnRate = preRate,
-                    postRetirementReturnRate = postRate
-                )
-            }
-        )
-        
-        // 스크롤 컨텐츠 (iOS: VStack spacing = LG, padding.vertical = LG)
-        LazyColumn(
-            state = listState,
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .nestedScroll(nestedScrollConnection)
-                .padding(vertical = ExitSpacing.MD)
+                .background(ExitColors.Background)
+                .statusBarsPadding()
         ) {
-            // D-Day 헤더
-            item {
-                DDayHeader(
-                    retirementResult = retirementResult,
-                    onExpandHeader = { isHeaderExpanded = true },
-                    modifier = Modifier.padding(horizontal = ExitSpacing.MD)
-                )
+            // 상단 플로팅 헤더 (스크롤과 무관하게 고정)
+            PlanHeaderView(
+                userProfile = userProfile,
+                currentAssetAmount = currentAsset?.amount ?: 0.0,
+                hideAmounts = hideAmounts,
+                isExpanded = isHeaderExpanded,
+                onExpandedChange = { isHeaderExpanded = it },
+                onApplyChanges = { asset, income, investment, preRate, postRate ->
+                    viewModel.updateCurrentAsset(asset)
+                    viewModel.updateSettings(
+                        desiredMonthlyIncome = income,
+                        monthlyInvestment = investment,
+                        preRetirementReturnRate = preRate,
+                        postRetirementReturnRate = postRate
+                    )
+                },
+                onAmountEditRequest = { type, value ->
+                    amountEditState = type to value
+                },
+                amountEditResult = amountEditResult,
+                onAmountEditResultConsumed = { amountEditResult = null }
+            )
+            
+            // 스크롤 컨텐츠 (iOS: VStack spacing = LG, padding.vertical = LG)
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(nestedScrollConnection)
+                    .padding(vertical = ExitSpacing.MD)
+            ) {
+                // D-Day 헤더
+                item {
+                    DDayHeader(
+                        retirementResult = retirementResult,
+                        onExpandHeader = { isHeaderExpanded = true },
+                        modifier = Modifier.padding(horizontal = ExitSpacing.MD)
+                    )
+                }
+                
+                item { Spacer(modifier = Modifier.height(ExitSpacing.LG)) }
+                
+                // 진행률 섹션
+                item {
+                    ProgressSection(
+                        viewModel = viewModel,
+                        retirementResult = retirementResult,
+                        userProfile = userProfile,
+                        hideAmounts = hideAmounts
+                    )
+                }
+                
+                item { Spacer(modifier = Modifier.height(ExitSpacing.MD)) }
+                
+                // 시뮬레이션 유도 버튼
+                item {
+                    SimulationPromptButton(
+                        onClick = { viewModel.selectTab(MainTab.SIMULATION) },
+                        modifier = Modifier.padding(horizontal = ExitSpacing.MD)
+                    )
+                }
+                
+                item { Spacer(modifier = Modifier.height(ExitSpacing.LG)) }
             }
-            
-            item { Spacer(modifier = Modifier.height(ExitSpacing.LG)) }
-            
-            // 진행률 섹션
-            item {
-                ProgressSection(
-                    viewModel = viewModel,
-                    retirementResult = retirementResult,
-                    userProfile = userProfile,
-                    hideAmounts = hideAmounts
-                )
-            }
-            
-            item { Spacer(modifier = Modifier.height(ExitSpacing.MD)) }
-            
-            // 시뮬레이션 유도 버튼
-            item {
-                SimulationPromptButton(
-                    onClick = { viewModel.selectTab(MainTab.SIMULATION) },
-                    modifier = Modifier.padding(horizontal = ExitSpacing.MD)
-                )
-            }
-            
-            item { Spacer(modifier = Modifier.height(ExitSpacing.LG)) }
+        }
+        
+        // 금액 편집 ModalBottomSheet
+        amountEditState?.let { (type, initialValue) ->
+            AmountEditSheet(
+                type = type,
+                initialValue = initialValue,
+                onConfirm = { newValue ->
+                    // PlanHeaderView의 편집 값만 업데이트 (실제 계산은 적용 시)
+                    amountEditResult = type to newValue
+                    amountEditState = null
+                },
+                onDismiss = { amountEditState = null }
+            )
         }
     }
 }
