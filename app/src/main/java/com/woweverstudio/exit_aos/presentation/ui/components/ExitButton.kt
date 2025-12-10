@@ -1,6 +1,7 @@
 package com.woweverstudio.exit_aos.presentation.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -79,6 +80,11 @@ fun ExitSecondaryButton(
             .height(48.dp)
             .clip(RoundedCornerShape(ExitRadius.MD))
             .background(ExitColors.CardBackground)
+            .border(
+                width = 1.dp,
+                color = ExitColors.Divider,
+                shape = RoundedCornerShape(ExitRadius.MD)
+            )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = ExitColors.Accent)
