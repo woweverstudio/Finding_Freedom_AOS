@@ -238,7 +238,7 @@ private fun BottomButtons(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                horizontal = ExitSpacing.LG,
+                horizontal = ExitSpacing.MD,
                 vertical = ExitSpacing.XL
             ),
         horizontalArrangement = Arrangement.spacedBy(ExitSpacing.MD)

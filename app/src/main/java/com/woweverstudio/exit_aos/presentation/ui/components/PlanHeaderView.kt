@@ -402,48 +402,48 @@ private fun AmountEditRow(
     accentColor: Color,
     onEditClick: () -> Unit
 ) {
-    // 전체 행을 탭 가능한 카드로
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(ExitRadius.MD))
-            .background(accentColor.copy(alpha = 0.08f))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(color = accentColor)
-            ) { onEditClick() }
-            .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.SM)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        // 라벨
+        Text(
+            text = label,
+            style = ExitTypography.Caption,
+            color = ExitColors.SecondaryText
+        )
+        
+        // 값 + 편집 버튼
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 라벨
+            // 현재 값
             Text(
-                text = label,
+                text = valueFormatter(value),
                 style = ExitTypography.Caption,
-                color = ExitColors.SecondaryText
+                fontWeight = FontWeight.Bold,
+                color = accentColor
             )
             
-            // 값 + 편집 아이콘
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM),
-                verticalAlignment = Alignment.CenterVertically
+            // 편집 버튼 (수익률 +/- 버튼과 동일한 스타일)
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(ExitRadius.SM))
+                    .background(accentColor.copy(alpha = 0.15f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = ripple(color = accentColor)
+                    ) { onEditClick() }
+                    .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.XS),
+                contentAlignment = Alignment.Center
             ) {
-                // 현재 값 (더 크게)
                 Text(
-                    text = valueFormatter(value),
-                    style = ExitTypography.Body,
-                    fontWeight = FontWeight.Bold,
+                    text = "편집",
+                    style = ExitTypography.Caption,
+                    fontWeight = FontWeight.Medium,
                     color = accentColor
-                )
-                
-                // 편집 표시
-                Text(
-                    text = "▸",
-                    style = ExitTypography.Body,
-                    color = accentColor.copy(alpha = 0.6f)
                 )
             }
         }
