@@ -30,6 +30,16 @@ enum class SimulationPhase(val description: String) {
 }
 
 /**
+ * 시뮬레이션 화면 상태
+ * iOS의 SimulationScreen enum과 동일
+ */
+enum class SimulationScreenState {
+    Empty,   // 미구입 또는 초기 화면
+    Setup,   // 설정 화면
+    Results  // 결과 화면
+}
+
+/**
  * 퍼센타일 포인트 데이터
  */
 data class PercentilePoint(
@@ -109,6 +119,10 @@ class SimulationViewModel @Inject constructor(
     /** 현재 자산 금액 (StateFlow) */
     private val _currentAssetAmount = MutableStateFlow(0.0)
     val currentAssetAmount: StateFlow<Double> = _currentAssetAmount.asStateFlow()
+    
+    /** 현재 화면 상태 (탭 전환 시에도 유지됨) */
+    private val _currentScreenState = MutableStateFlow(SimulationScreenState.Empty)
+    val currentScreenState: StateFlow<SimulationScreenState> = _currentScreenState.asStateFlow()
     
     // MARK: - Computed Properties
     
@@ -327,6 +341,40 @@ class SimulationViewModel @Inject constructor(
     
     fun resetSpendingRatio() {
         _spendingRatio.value = 1.0
+    }
+    
+    // MARK: - Screen Navigation
+    
+    /**
+     * Setup 화면으로 이동
+     */
+    fun navigateToSetup() {
+        _currentScreenState.value = SimulationScreenState.Setup
+    }
+    
+    /**
+     * Results 화면으로 이동
+     */
+    fun navigateToResults() {
+        _currentScreenState.value = SimulationScreenState.Results
+    }
+    
+    /**
+     * Empty 화면으로 이동
+     */
+    fun navigateToEmpty() {
+        _currentScreenState.value = SimulationScreenState.Empty
+    }
+    
+    /**
+     * 뒤로 가기 (결과가 있으면 Results, 없으면 Empty)
+     */
+    fun navigateBack() {
+        _currentScreenState.value = if (_monteCarloResult.value != null) {
+            SimulationScreenState.Results
+        } else {
+            SimulationScreenState.Empty
+        }
     }
     
     // MARK: - Settings & Asset Update (DB 저장)

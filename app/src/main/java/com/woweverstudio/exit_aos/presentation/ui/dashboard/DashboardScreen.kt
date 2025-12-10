@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -59,6 +59,7 @@ import com.woweverstudio.exit_aos.presentation.ui.theme.ExitTypography
 import com.woweverstudio.exit_aos.presentation.viewmodel.AppStateViewModel
 import com.woweverstudio.exit_aos.presentation.viewmodel.MainTab
 import com.woweverstudio.exit_aos.util.ExitNumberFormatter
+import com.woweverstudio.exit_aos.util.rememberHaptic
 
 /**
  * 대시보드 화면
@@ -72,6 +73,9 @@ fun DashboardScreen(
     val currentAsset by viewModel.currentAsset.collectAsState()
     val retirementResult by viewModel.retirementResult.collectAsState()
     val hideAmounts by viewModel.hideAmounts.collectAsState()
+    
+    // 햅틱 피드백
+    val haptic = rememberHaptic()
     
     // PlanHeader 펼침 상태
     var isHeaderExpanded by rememberSaveable { mutableStateOf(false) }
@@ -140,10 +144,10 @@ fun DashboardScreen(
     
     Box(modifier = modifier.fillMaxSize()) {
         Column(
+            verticalArrangement = Arrangement.spacedBy(0.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .background(ExitColors.Background)
-                .statusBarsPadding()
         ) {
             // 상단 플로팅 헤더 (스크롤과 무관하게 고정)
             PlanHeaderView(
@@ -171,21 +175,23 @@ fun DashboardScreen(
             // 스크롤 컨텐츠 (iOS: VStack spacing = LG, padding.vertical = LG)
             LazyColumn(
                 state = listState,
+                contentPadding = PaddingValues(vertical = ExitSpacing.LG),
+                verticalArrangement = Arrangement.spacedBy(ExitSpacing.LG),
                 modifier = Modifier
                     .fillMaxSize()
                     .nestedScroll(nestedScrollConnection)
-                    .padding(vertical = ExitSpacing.MD)
             ) {
                 // D-Day 헤더
                 item {
                     DDayHeader(
                         retirementResult = retirementResult,
-                        onExpandHeader = { isHeaderExpanded = true },
+                        onExpandHeader = {
+                            haptic.light()
+                            isHeaderExpanded = true
+                        },
                         modifier = Modifier.padding(horizontal = ExitSpacing.MD)
                     )
                 }
-                
-                item { Spacer(modifier = Modifier.height(ExitSpacing.LG)) }
                 
                 // 진행률 섹션
                 item {
@@ -193,21 +199,24 @@ fun DashboardScreen(
                         viewModel = viewModel,
                         retirementResult = retirementResult,
                         userProfile = userProfile,
-                        hideAmounts = hideAmounts
+                        hideAmounts = hideAmounts,
+                        onToggleHideAmounts = {
+                            haptic.light()
+                            viewModel.toggleHideAmounts()
+                        }
                     )
                 }
-                
-                item { Spacer(modifier = Modifier.height(ExitSpacing.MD)) }
                 
                 // 시뮬레이션 유도 버튼
                 item {
                     SimulationPromptButton(
-                        onClick = { viewModel.selectTab(MainTab.SIMULATION) },
+                        onClick = {
+                            haptic.medium()
+                            viewModel.selectTab(MainTab.SIMULATION)
+                        },
                         modifier = Modifier.padding(horizontal = ExitSpacing.MD)
                     )
                 }
-                
-                item { Spacer(modifier = Modifier.height(ExitSpacing.LG)) }
             }
         }
         
@@ -290,7 +299,8 @@ private fun DDayHeader(
                         
                         Text(
                             text = retirementResult.dDayString,
-                            style = ExitTypography.Title,
+                            style = ExitTypography.Title2,
+                            fontWeight = FontWeight.ExtraBold,
                             color = ExitColors.Accent
                         )
                         
@@ -346,7 +356,8 @@ private fun ProgressSection(
     viewModel: AppStateViewModel,
     retirementResult: com.woweverstudio.exit_aos.domain.usecase.RetirementCalculationResult?,
     userProfile: com.woweverstudio.exit_aos.domain.model.UserProfile?,
-    hideAmounts: Boolean
+    hideAmounts: Boolean,
+    onToggleHideAmounts: () -> Unit
 ) {
     Column(
         modifier = Modifier.padding(horizontal = ExitSpacing.MD),
@@ -368,7 +379,7 @@ private fun ProgressSection(
             Box(modifier = Modifier.fillMaxWidth()) {
                 AmountVisibilityToggle(
                     hideAmounts = hideAmounts,
-                    onClick = { viewModel.toggleHideAmounts() },
+                    onClick = onToggleHideAmounts,
                     modifier = Modifier.align(Alignment.CenterEnd)
                 )
             }
@@ -391,7 +402,7 @@ private fun AmountVisibilityToggle(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    Box(
         modifier = modifier
             .clip(RoundedCornerShape(ExitRadius.Full))
             .background(ExitColors.CardBackground)
@@ -400,15 +411,8 @@ private fun AmountVisibilityToggle(
                 indication = ripple(color = ExitColors.Accent)
             ) { onClick() }
             .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.SM),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(ExitSpacing.XS)
+        contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = if (hideAmounts) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-            contentDescription = null,
-            tint = if (hideAmounts) ExitColors.Accent else ExitColors.TertiaryText,
-            modifier = Modifier.size(14.dp)
-        )
         Text(
             text = if (hideAmounts) "금액 보기" else "금액 숨김",
             style = ExitTypography.Caption2,

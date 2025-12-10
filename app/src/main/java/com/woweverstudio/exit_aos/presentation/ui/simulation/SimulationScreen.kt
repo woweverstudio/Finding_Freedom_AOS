@@ -36,19 +36,10 @@ import com.woweverstudio.exit_aos.presentation.ui.simulation.charts.Distribution
 import com.woweverstudio.exit_aos.presentation.ui.simulation.charts.RetirementProjectionChart
 import com.woweverstudio.exit_aos.presentation.ui.simulation.charts.RetirementShortTermChart
 import com.woweverstudio.exit_aos.presentation.ui.theme.*
+import com.woweverstudio.exit_aos.presentation.viewmodel.SimulationScreenState
 import com.woweverstudio.exit_aos.presentation.viewmodel.SimulationViewModel
 import com.woweverstudio.exit_aos.util.ExitNumberFormatter
 import kotlinx.coroutines.launch
-
-/**
- * 화면 상태
- * iOS의 SimulationScreen enum과 동일
- */
-enum class SimulationScreenState {
-    Empty,   // 미구입 또는 초기 화면
-    Setup,   // 설정 화면
-    Results  // 결과 화면
-}
 
 /**
  * 시뮬레이션 화면
@@ -73,8 +64,8 @@ fun SimulationScreen(
     val isMontecarloUnlocked by billingService.isMontecarloUnlocked.collectAsState()
     val errorMessage by billingService.errorMessage.collectAsState()
     
-    // 화면 상태 관리 (iOS의 currentScreen과 동일)
-    var currentScreen by remember { mutableStateOf(SimulationScreenState.Empty) }
+    // 화면 상태 관리 (ViewModel에서 관리하여 탭 전환 시에도 유지됨)
+    val currentScreen by viewModel.currentScreenState.collectAsState()
     
     val context = LocalContext.current
     val activity = context as? Activity
@@ -83,7 +74,7 @@ fun SimulationScreen(
     // 구매 완료 시 설정 화면으로 이동 (iOS의 onChange와 동일)
     LaunchedEffect(isMontecarloUnlocked) {
         if (isMontecarloUnlocked && currentScreen == SimulationScreenState.Empty) {
-            currentScreen = SimulationScreenState.Setup
+            viewModel.navigateToSetup()
         }
     }
     
@@ -129,7 +120,7 @@ fun SimulationScreen(
                                 onStart = {
                                     // 이미 구입한 경우 설정 화면으로
                                     if (isMontecarloUnlocked) {
-                                        currentScreen = SimulationScreenState.Setup
+                                        viewModel.navigateToSetup()
                                     }
                                     // 미구입인 경우 EmptyView에서 구입 처리
                                 },
@@ -160,14 +151,10 @@ fun SimulationScreen(
                                 currentAssetAmount = currentAssetAmount,
                                 onBack = {
                                     // 결과가 있으면 결과로, 없으면 empty로 (iOS와 동일)
-                                    currentScreen = if (monteCarloResult != null) {
-                                        SimulationScreenState.Results
-                                    } else {
-                                        SimulationScreenState.Empty
-                                    }
+                                    viewModel.navigateBack()
                                 },
                                 onStart = {
-                                    currentScreen = SimulationScreenState.Results
+                                    viewModel.navigateToResults()
                                 }
                             )
                         }
@@ -187,7 +174,7 @@ fun SimulationScreen(
                                         result = monteCarloResult!!,
                                         onRestart = {
                                             // 다시 시뮬레이션 → setup 화면으로 (iOS와 동일)
-                                            currentScreen = SimulationScreenState.Setup
+                                            viewModel.navigateToSetup()
                                         }
                                     )
                                 }

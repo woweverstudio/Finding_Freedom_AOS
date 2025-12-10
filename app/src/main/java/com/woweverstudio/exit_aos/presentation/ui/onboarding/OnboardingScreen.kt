@@ -254,7 +254,7 @@ private fun BottomButtons(
         
         // 다음/완료 버튼
         ExitPrimaryButton(
-            text = if (viewModel.isLastStep) "완료하고 시작하기" else "다음",
+            text = if (viewModel.isLastStep) "시작하기" else "다음",
             onClick = {
                 if (viewModel.isLastStep) {
                     viewModel.completeOnboarding()

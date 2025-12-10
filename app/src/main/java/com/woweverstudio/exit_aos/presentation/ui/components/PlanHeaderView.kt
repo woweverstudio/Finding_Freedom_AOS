@@ -44,6 +44,7 @@ import com.woweverstudio.exit_aos.presentation.ui.theme.ExitRadius
 import com.woweverstudio.exit_aos.presentation.ui.theme.ExitSpacing
 import com.woweverstudio.exit_aos.presentation.ui.theme.ExitTypography
 import com.woweverstudio.exit_aos.util.ExitNumberFormatter
+import com.woweverstudio.exit_aos.util.rememberHaptic
 
 /**
  * 상단 드롭다운 편집 패널
@@ -99,6 +100,9 @@ fun PlanHeaderView(
         }
     }
     
+    // 햅틱 피드백
+    val haptic = rememberHaptic()
+    
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -124,8 +128,14 @@ fun PlanHeaderView(
             editingPreReturnRate = editingPreReturnRate,
             hideAmounts = hideAmounts,
             isExpanded = isExpanded,
-            onToggle = { onExpandedChange(!isExpanded) },
-            onDragDown = { onExpandedChange(true) }
+            onToggle = {
+                haptic.light()
+                onExpandedChange(!isExpanded)
+            },
+            onDragDown = {
+                haptic.light()
+                onExpandedChange(true)
+            }
         )
         
         // 펼쳐지는 편집 패널
@@ -133,14 +143,14 @@ fun PlanHeaderView(
             visible = isExpanded,
             enter = expandVertically(
                 animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMediumLow
                 )
             ) + fadeIn(),
             exit = shrinkVertically(
                 animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessMediumLow
                 )
             ) + fadeOut()
         ) {
@@ -156,6 +166,7 @@ fun PlanHeaderView(
                 editingPostReturnRate = editingPostReturnRate,
                 onPostReturnRateChange = { editingPostReturnRate = it },
                 onAmountEditClick = { type ->
+                    haptic.soft()
                     val value = when (type) {
                         AmountEditType.CURRENT_ASSET -> editingCurrentAsset.toDouble()
                         AmountEditType.MONTHLY_INVESTMENT -> editingMonthlyInvestment.toDouble()
@@ -164,6 +175,7 @@ fun PlanHeaderView(
                     onAmountEditRequest(type, value)
                 },
                 onApply = {
+                    haptic.success()
                     onApplyChanges(
                         editingCurrentAsset.toDouble(),
                         editingMonthlyIncome.toDouble(),

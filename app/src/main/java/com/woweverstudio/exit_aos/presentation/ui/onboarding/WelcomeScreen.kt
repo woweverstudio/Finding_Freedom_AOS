@@ -1,5 +1,6 @@
 package com.woweverstudio.exit_aos.presentation.ui.onboarding
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,17 +19,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.woweverstudio.exit_aos.R
 import com.woweverstudio.exit_aos.presentation.ui.components.ExitPrimaryButton
 import com.woweverstudio.exit_aos.presentation.ui.theme.ExitColors
-import com.woweverstudio.exit_aos.presentation.ui.theme.ExitRadius
 import com.woweverstudio.exit_aos.presentation.ui.theme.ExitSpacing
 import com.woweverstudio.exit_aos.presentation.ui.theme.ExitTypography
 
@@ -119,27 +123,24 @@ private fun TitleSection() {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 로고 아이콘 (텍스트로 대체)
-        Box(
+        // 로고 이미지 (iOS와 동일)
+        Image(
+            painter = painterResource(id = R.drawable.logo),
+            contentDescription = "Exit 로고",
             modifier = Modifier
                 .size(100.dp)
-                .clip(RoundedCornerShape(ExitRadius.XL))
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(ExitColors.Accent, ExitColors.AccentSecondary)
-                    )
+                .shadow(
+                    elevation = 20.dp,
+                    spotColor = ExitColors.Accent.copy(alpha = 0.5f),
+                    ambientColor = ExitColors.Accent.copy(alpha = 0.5f),
+                    shape = CircleShape
                 ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Exit",
-                style = ExitTypography.Title2,
-                color = Color.White
-            )
-        }
+            contentScale = ContentScale.Fit
+        )
         
         Spacer(modifier = Modifier.height(ExitSpacing.LG))
         
+        // 그라데이션 텍스트 (iOS와 동일)
         Text(
             text = "자유를 찾아서",
             style = ExitTypography.Title,
