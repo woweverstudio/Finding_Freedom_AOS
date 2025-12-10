@@ -41,6 +41,7 @@ import com.woweverstudio.exit_aos.presentation.ui.theme.ExitTypography
 import com.woweverstudio.exit_aos.data.billing.BillingService
 import com.woweverstudio.exit_aos.presentation.viewmodel.AppStateViewModel
 import com.woweverstudio.exit_aos.presentation.viewmodel.MainTab
+import com.woweverstudio.exit_aos.util.ReviewService
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -53,6 +54,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // 앱 실행 기록 (3번째 실행 시 리뷰 요청)
+        ReviewService.recordAppLaunch(this)
+        
         setContent {
             ExitTheme {
                 ExitApp(billingService = billingService)

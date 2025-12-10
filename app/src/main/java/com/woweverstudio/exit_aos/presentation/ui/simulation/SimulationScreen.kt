@@ -39,6 +39,7 @@ import com.woweverstudio.exit_aos.presentation.ui.theme.*
 import com.woweverstudio.exit_aos.presentation.viewmodel.SimulationScreenState
 import com.woweverstudio.exit_aos.presentation.viewmodel.SimulationViewModel
 import com.woweverstudio.exit_aos.util.ExitNumberFormatter
+import com.woweverstudio.exit_aos.util.ReviewService
 import kotlinx.coroutines.launch
 
 /**
@@ -76,6 +77,16 @@ fun SimulationScreen(
         if (isMontecarloUnlocked && currentScreen == SimulationScreenState.Empty) {
             viewModel.navigateToSetup()
         }
+    }
+    
+    // 시뮬레이션 완료 시 리뷰 요청 (2번째 완료 시)
+    var wasSimulating by remember { mutableStateOf(false) }
+    LaunchedEffect(isSimulating) {
+        if (wasSimulating && !isSimulating && monteCarloResult != null) {
+            // 시뮬레이션이 완료됨
+            activity?.let { ReviewService.recordSimulationCompleted(it) }
+        }
+        wasSimulating = isSimulating
     }
     
     Box(

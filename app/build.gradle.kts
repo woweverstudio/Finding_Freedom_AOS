@@ -99,6 +99,10 @@ dependencies {
     // Google Play Billing
     implementation(libs.play.billing)
     implementation(libs.play.billing.ktx)
+    
+    // Google Play In-App Review
+    implementation(libs.play.review)
+    implementation(libs.play.review.ktx)
 
     // Testing
     testImplementation(libs.junit)
