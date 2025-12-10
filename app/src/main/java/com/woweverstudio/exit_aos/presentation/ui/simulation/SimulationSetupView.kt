@@ -53,6 +53,7 @@ fun SimulationSetupView(
     var editingMonthlyIncome by remember { mutableDoubleStateOf(userProfile?.desiredMonthlyIncome ?: 3_000_000.0) }
     var editingPreReturnRate by remember { mutableFloatStateOf(userProfile?.preRetirementReturnRate?.toFloat() ?: 6.5f) }
     var editingPostReturnRate by remember { mutableFloatStateOf(userProfile?.postRetirementReturnRate?.toFloat() ?: 4.0f) }
+    var spendingRatio by remember { mutableDoubleStateOf(1.0) }
     var failureThreshold by remember { mutableDoubleStateOf(1.1) }
     
     // Amount Edit Sheet State
@@ -101,6 +102,13 @@ fun SimulationSetupView(
                 onPostReturnRateChange = { editingPostReturnRate = it }
             )
             
+            // 생활비 사용 비율 섹션
+            SpendingRatioSection(
+                spendingRatio = spendingRatio,
+                onSpendingRatioChange = { spendingRatio = it },
+                monthlyIncome = editingMonthlyIncome
+            )
+            
             // 실패 조건 섹션
             FailureThresholdSection(
                 failureThreshold = failureThreshold,
@@ -134,6 +142,7 @@ fun SimulationSetupView(
                 
                 // 2. 시뮬레이션 파라미터 설정
                 viewModel.updateFailureThreshold(failureThreshold)
+                viewModel.updateSpendingRatio(spendingRatio)
                 val autoVolatility = SimulationViewModel.calculateVolatility(editingPreReturnRate.toDouble())
                 viewModel.updateVolatility(autoVolatility)
                 
@@ -143,7 +152,8 @@ fun SimulationSetupView(
                     overrideMonthlyInvestment = editingMonthlyInvestment,
                     overrideDesiredMonthlyIncome = editingMonthlyIncome,
                     overridePreReturnRate = editingPreReturnRate.toDouble(),
-                    overridePostReturnRate = editingPostReturnRate.toDouble()
+                    overridePostReturnRate = editingPostReturnRate.toDouble(),
+                    overrideSpendingRatio = spendingRatio
                 )
                 onStart()
             }
@@ -458,6 +468,132 @@ private fun RateButton(
             style = ExitTypography.Body,
             fontWeight = FontWeight.Bold,
             color = buttonColor
+        )
+    }
+}
+
+// MARK: - Spending Ratio Section
+
+@Composable
+private fun SpendingRatioSection(
+    spendingRatio: Double,
+    onSpendingRatioChange: (Double) -> Unit,
+    monthlyIncome: Double
+) {
+    val actualSpending = monthlyIncome * spendingRatio
+    
+    Column(
+        modifier = Modifier.padding(horizontal = ExitSpacing.MD),
+        verticalArrangement = Arrangement.spacedBy(ExitSpacing.SM)
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(ExitSpacing.XS)
+        ) {
+            SectionHeader("생활비 사용 비율")
+            
+            Text(
+                text = "은퇴 후 희망 월수입 중 실제로 사용할 비율을 설정합니다",
+                style = ExitTypography.Caption2,
+                color = ExitColors.TertiaryText,
+                modifier = Modifier.padding(horizontal = ExitSpacing.MD)
+            )
+        }
+        
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(ExitRadius.LG))
+                .background(ExitColors.CardBackground)
+                .padding(ExitSpacing.MD),
+            verticalArrangement = Arrangement.spacedBy(ExitSpacing.SM)
+        ) {
+            // 생활비 비율 선택 버튼들
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM)
+            ) {
+                SpendingRatioButton(
+                    value = 0.5,
+                    label = "50%",
+                    isSelected = abs(spendingRatio - 0.5) < 0.01,
+                    onClick = { onSpendingRatioChange(0.5) },
+                    modifier = Modifier.weight(1f)
+                )
+                SpendingRatioButton(
+                    value = 0.7,
+                    label = "70%",
+                    isSelected = abs(spendingRatio - 0.7) < 0.01,
+                    onClick = { onSpendingRatioChange(0.7) },
+                    modifier = Modifier.weight(1f)
+                )
+                SpendingRatioButton(
+                    value = 0.85,
+                    label = "85%",
+                    isSelected = abs(spendingRatio - 0.85) < 0.01,
+                    onClick = { onSpendingRatioChange(0.85) },
+                    modifier = Modifier.weight(1f)
+                )
+                SpendingRatioButton(
+                    value = 1.0,
+                    label = "100%",
+                    isSelected = abs(spendingRatio - 1.0) < 0.01,
+                    onClick = { onSpendingRatioChange(1.0) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            
+            // 현재 설정 예시
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(ExitSpacing.XS),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    modifier = Modifier.size(11.dp),
+                    tint = ExitColors.SecondaryText
+                )
+                Text(
+                    text = "월 ${ExitNumberFormatter.formatToManWon(monthlyIncome)} × ${String.format("%.0f", spendingRatio * 100)}% = ${ExitNumberFormatter.formatToManWon(actualSpending)} 사용",
+                    style = ExitTypography.Caption2,
+                    color = ExitColors.SecondaryText
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SpendingRatioButton(
+    value: Double,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(ExitRadius.SM))
+            .then(
+                if (isSelected) {
+                    Modifier.background(ExitColors.Positive)
+                } else {
+                    Modifier
+                        .background(ExitColors.Background)
+                        .border(1.dp, ExitColors.Divider, RoundedCornerShape(ExitRadius.SM))
+                }
+            )
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(color = if (isSelected) Color.White else ExitColors.Positive)
+            ) { onClick() }
+            .padding(vertical = ExitSpacing.SM),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            style = ExitTypography.Caption,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (isSelected) Color.White else ExitColors.SecondaryText
         )
     }
 }

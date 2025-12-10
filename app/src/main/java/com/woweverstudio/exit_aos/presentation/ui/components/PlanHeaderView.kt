@@ -403,7 +403,9 @@ private fun AmountEditRow(
     onEditClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = ExitSpacing.XS),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -436,7 +438,7 @@ private fun AmountEditRow(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = ripple(color = accentColor)
                     ) { onEditClick() }
-                    .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.XS),
+                    .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.SM),
                 contentAlignment = Alignment.Center
             ) {
                 Text(

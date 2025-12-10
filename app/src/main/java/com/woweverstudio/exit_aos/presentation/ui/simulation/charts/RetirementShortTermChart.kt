@@ -33,6 +33,7 @@ import com.woweverstudio.exit_aos.domain.usecase.RetirementCalculator
 import com.woweverstudio.exit_aos.domain.usecase.RetirementSimulationResult
 import com.woweverstudio.exit_aos.presentation.ui.theme.*
 import com.woweverstudio.exit_aos.util.ExitNumberFormatter
+import androidx.compose.ui.text.style.TextAlign
 
 /**
  * 은퇴 후 단기(1~10년) 자산 변화 차트
@@ -42,6 +43,7 @@ import com.woweverstudio.exit_aos.util.ExitNumberFormatter
 fun RetirementShortTermChart(
     result: RetirementSimulationResult,
     userProfile: UserProfile,
+    spendingRatio: Double = 1.0,
     modifier: Modifier = Modifier
 ) {
     // 시뮬레이션 시작 자산
@@ -107,7 +109,8 @@ fun RetirementShortTermChart(
         // 7. 시뮬레이션 조건
         SimulationConditionSection(
             startingAsset = startingAsset,
-            userProfile = userProfile
+            userProfile = userProfile,
+            spendingRatio = spendingRatio
         )
     }
 }
@@ -630,8 +633,16 @@ private fun HelpSection() {
 @Composable
 private fun SimulationConditionSection(
     startingAsset: Double,
-    userProfile: UserProfile
+    userProfile: UserProfile,
+    spendingRatio: Double
 ) {
+    val actualSpending = userProfile.desiredMonthlyIncome * spendingRatio
+    val spendingDisplayValue = if (spendingRatio < 1.0) {
+        "${ExitNumberFormatter.formatToManWon(actualSpending)}(${String.format("%.0f", spendingRatio * 100)}%)"
+    } else {
+        ExitNumberFormatter.formatToManWon(actualSpending)
+    }
+    
     Column(
         verticalArrangement = Arrangement.spacedBy(ExitSpacing.SM)
     ) {
@@ -643,7 +654,7 @@ private fun SimulationConditionSection(
         )
         
         Row(
-            horizontalArrangement = Arrangement.spacedBy(ExitSpacing.LG)
+            horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM)
         ) {
             DataItem(
                 label = "시작 자산",
@@ -652,7 +663,7 @@ private fun SimulationConditionSection(
             )
             DataItem(
                 label = "월 지출",
-                value = ExitNumberFormatter.formatToManWon(userProfile.desiredMonthlyIncome),
+                value = spendingDisplayValue,
                 modifier = Modifier.weight(1f)
             )
             DataItem(
@@ -677,13 +688,16 @@ private fun DataItem(
         Text(
             text = label,
             style = ExitTypography.Caption2,
-            color = ExitColors.TertiaryText
+            color = ExitColors.TertiaryText,
+            maxLines = 1
         )
         Text(
             text = value,
             style = ExitTypography.Caption,
             fontWeight = FontWeight.Medium,
-            color = ExitColors.PrimaryText
+            color = ExitColors.PrimaryText,
+            maxLines = 1,
+            textAlign = TextAlign.Center
         )
     }
 }

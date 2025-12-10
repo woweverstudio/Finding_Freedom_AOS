@@ -326,7 +326,8 @@ private fun SimulationResultsView(
                 userProfile?.let { profile ->
                     RetirementShortTermChart(
                         result = retirement,
-                        userProfile = profile
+                        userProfile = profile,
+                        spendingRatio = viewModel.spendingRatio.collectAsState().value
                     )
                 }
             }
@@ -336,7 +337,8 @@ private fun SimulationResultsView(
                 userProfile?.let { profile ->
                     RetirementProjectionChart(
                         result = retirement,
-                        userProfile = profile
+                        userProfile = profile,
+                        spendingRatio = viewModel.spendingRatio.collectAsState().value
                     )
                 }
             }
@@ -392,7 +394,8 @@ private fun SimulationResultsView(
                 userProfile?.let { profile ->
                     RetirementShortTermChart(
                         result = retirement,
-                        userProfile = profile
+                        userProfile = profile,
+                        spendingRatio = viewModel.spendingRatio.collectAsState().value
                     )
                 }
             }
@@ -402,7 +405,8 @@ private fun SimulationResultsView(
                 userProfile?.let { profile ->
                     RetirementProjectionChart(
                         result = retirement,
-                        userProfile = profile
+                        userProfile = profile,
+                        spendingRatio = viewModel.spendingRatio.collectAsState().value
                     )
                 }
             }

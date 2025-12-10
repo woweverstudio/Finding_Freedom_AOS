@@ -102,6 +102,10 @@ class SimulationViewModel @Inject constructor(
     private val _failureThresholdMultiplier = MutableStateFlow(1.1)
     val failureThresholdMultiplier: StateFlow<Double> = _failureThresholdMultiplier.asStateFlow()
     
+    /** 생활비 사용 비율 (기본값 1.0 = 100%) */
+    private val _spendingRatio = MutableStateFlow(1.0)
+    val spendingRatio: StateFlow<Double> = _spendingRatio.asStateFlow()
+    
     /** 현재 자산 금액 (StateFlow) */
     private val _currentAssetAmount = MutableStateFlow(0.0)
     val currentAssetAmount: StateFlow<Double> = _currentAssetAmount.asStateFlow()
@@ -192,7 +196,8 @@ class SimulationViewModel @Inject constructor(
         overrideMonthlyInvestment: Double? = null,
         overrideDesiredMonthlyIncome: Double? = null,
         overridePreReturnRate: Double? = null,
-        overridePostReturnRate: Double? = null
+        overridePostReturnRate: Double? = null,
+        overrideSpendingRatio: Double? = null
     ) {
         val profile = _userProfile.value ?: return
         
@@ -208,6 +213,10 @@ class SimulationViewModel @Inject constructor(
                 val desiredMonthlyIncome = overrideDesiredMonthlyIncome ?: profile.desiredMonthlyIncome
                 val preReturnRate = overridePreReturnRate ?: profile.preRetirementReturnRate
                 val postReturnRate = overridePostReturnRate ?: profile.postRetirementReturnRate
+                val spendingRatio = overrideSpendingRatio ?: _spendingRatio.value
+                
+                // 실제 월 지출액 = 희망 월수입 × 생활비 사용 비율
+                val actualMonthlySpending = desiredMonthlyIncome * spendingRatio
                 
                 val simCount = _simulationCount.value
                 val preRetirementVolatility = effectiveVolatility
@@ -268,7 +277,7 @@ class SimulationViewModel @Inject constructor(
                 
                 val retirementResult = RetirementSimulator.simulate(
                     initialAsset = retirementStartAsset,
-                    monthlySpending = desiredMonthlyIncome,
+                    monthlySpending = actualMonthlySpending,  // 생활비 사용 비율 적용
                     annualReturn = postReturnRate,
                     volatility = postRetirementVolatility,
                     simulationCount = simCount
@@ -310,6 +319,14 @@ class SimulationViewModel @Inject constructor(
     
     fun resetFailureThreshold() {
         _failureThresholdMultiplier.value = 1.1
+    }
+    
+    fun updateSpendingRatio(ratio: Double) {
+        _spendingRatio.value = ratio
+    }
+    
+    fun resetSpendingRatio() {
+        _spendingRatio.value = 1.0
     }
     
     // MARK: - Settings & Asset Update (DB 저장)
