@@ -3,7 +3,6 @@ package com.woweverstudio.exit_aos.presentation.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
@@ -54,28 +52,16 @@ fun CustomNumberKeyboard(
             .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.MD),
         verticalArrangement = Arrangement.spacedBy(ExitSpacing.SM)
     ) {
-        // 빠른 금액 버튼 (가로 스크롤)
+        // 빠른 금액 버튼 (가로 꽉 채움)
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = ExitSpacing.XS),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM)
         ) {
-            // 음수/양수 토글
-            if (showNegativeToggle) {
-                QuickButton(
-                    text = if (isNegative) "양수" else "음수",
-                    isDestructive = false,
-                    onClick = onToggleSign
-                )
-            }
-            
-            // 빠른 금액 버튼들
-            QuickButton(text = "+10만", onClick = { onQuickAmountClick(100_000.0) })
-            QuickButton(text = "+100만", onClick = { onQuickAmountClick(1_000_000.0) })
-            QuickButton(text = "+1000만", onClick = { onQuickAmountClick(10_000_000.0) })
-            QuickButton(text = "+1억", onClick = { onQuickAmountClick(100_000_000.0) })
+            QuickButton(text = "+1만", onClick = { onQuickAmountClick(10_000.0) }, modifier = Modifier.weight(1f))
+            QuickButton(text = "+10만", onClick = { onQuickAmountClick(100_000.0) }, modifier = Modifier.weight(1f))
+            QuickButton(text = "+100만", onClick = { onQuickAmountClick(1_000_000.0) }, modifier = Modifier.weight(1f))
+            QuickButton(text = "+1000만", onClick = { onQuickAmountClick(10_000_000.0) }, modifier = Modifier.weight(1f))
+            QuickButton(text = "+1억", onClick = { onQuickAmountClick(100_000_000.0) }, modifier = Modifier.weight(1f))
         }
         
         // 숫자 키패드
@@ -112,12 +98,21 @@ fun CustomNumberKeyboard(
                 NumberKey("9", onDigitClick, Modifier.weight(1f))
             }
             
-            // Row 4: 초기화, 0, ←
+            // Row 4: C, -, 0, ←
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM)
             ) {
-                ResetKey(onResetClick, Modifier.weight(1f))
+                // C와 -는 한 칸을 나눠서 사용
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(ExitSpacing.XS)
+                ) {
+                    ResetKey(onResetClick, Modifier.weight(1f))
+                    if (showNegativeToggle) {
+                        NegativeKey(onToggleSign, Modifier.weight(1f))
+                    }
+                }
                 NumberKey("0", onDigitClick, Modifier.weight(1f))
                 DeleteKey(onDeleteClick, Modifier.weight(1f))
             }
@@ -172,10 +167,11 @@ private fun DeleteKey(
             ) { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "←",
-            style = ExitTypography.Keypad,
-            color = ExitColors.Accent
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.Backspace,
+            contentDescription = "삭제",
+            modifier = Modifier.size(28.dp),
+            tint = ExitColors.Accent
         )
     }
 }
@@ -208,38 +204,62 @@ private fun ResetKey(
 }
 
 /**
+ * 음수 토글 키
+ */
+@Composable
+private fun NegativeKey(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .height(56.dp)
+            .clip(RoundedCornerShape(ExitRadius.MD))
+            .background(ExitColors.SecondaryCardBackground)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(color = ExitColors.Accent)
+            ) { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "-",
+            style = ExitTypography.Keypad,
+            color = ExitColors.Accent
+        )
+    }
+}
+
+/**
  * 빠른 금액/기능 버튼
  */
 @Composable
 private fun QuickButton(
     text: String,
-    isDestructive: Boolean = false,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val buttonColor = if (isDestructive) ExitColors.Warning else ExitColors.Accent
-    
     Box(
-        modifier = Modifier
+        modifier = modifier
             .height(36.dp)
             .clip(RoundedCornerShape(ExitRadius.SM))
-            .background(buttonColor.copy(alpha = 0.15f))
+            .background(ExitColors.Accent.copy(alpha = 0.15f))
             .border(
                 width = 1.dp,
-                color = buttonColor.copy(alpha = 0.3f),
+                color = ExitColors.Accent.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(ExitRadius.SM)
             )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(color = buttonColor)
-            ) { onClick() }
-            .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.SM),
+                indication = ripple(color = ExitColors.Accent)
+            ) { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
             style = ExitTypography.Caption,
             fontWeight = FontWeight.Medium,
-            color = buttonColor,
+            color = ExitColors.Accent,
             textAlign = TextAlign.Center
         )
     }
