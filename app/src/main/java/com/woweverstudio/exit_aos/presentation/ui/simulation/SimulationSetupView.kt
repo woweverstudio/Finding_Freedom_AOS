@@ -26,6 +26,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.woweverstudio.exit_aos.domain.model.UserProfile
 import com.woweverstudio.exit_aos.domain.usecase.RetirementCalculator
+import com.woweverstudio.exit_aos.presentation.ui.components.AmountEditSheet
+import com.woweverstudio.exit_aos.presentation.ui.components.AmountEditType
 import com.woweverstudio.exit_aos.presentation.ui.components.ExitSlider
 import com.woweverstudio.exit_aos.presentation.ui.theme.*
 import com.woweverstudio.exit_aos.presentation.viewmodel.SimulationViewModel
@@ -46,19 +48,22 @@ fun SimulationSetupView(
     modifier: Modifier = Modifier
 ) {
     // Editing States
-    var editingCurrentAsset by remember { mutableFloatStateOf(currentAssetAmount.toFloat()) }
-    var editingMonthlyInvestment by remember { mutableFloatStateOf(userProfile?.monthlyInvestment?.toFloat() ?: 500_000f) }
-    var editingMonthlyIncome by remember { mutableFloatStateOf(userProfile?.desiredMonthlyIncome?.toFloat() ?: 3_000_000f) }
+    var editingCurrentAsset by remember { mutableDoubleStateOf(currentAssetAmount) }
+    var editingMonthlyInvestment by remember { mutableDoubleStateOf(userProfile?.monthlyInvestment ?: 500_000.0) }
+    var editingMonthlyIncome by remember { mutableDoubleStateOf(userProfile?.desiredMonthlyIncome ?: 3_000_000.0) }
     var editingPreReturnRate by remember { mutableFloatStateOf(userProfile?.preRetirementReturnRate?.toFloat() ?: 6.5f) }
     var editingPostReturnRate by remember { mutableFloatStateOf(userProfile?.postRetirementReturnRate?.toFloat() ?: 4.0f) }
     var failureThreshold by remember { mutableDoubleStateOf(1.1) }
     
+    // Amount Edit Sheet State
+    var showAmountEditSheet by remember { mutableStateOf<AmountEditType?>(null) }
+    
     // Sync with actual values when profile changes
     LaunchedEffect(userProfile, currentAssetAmount) {
-        editingCurrentAsset = currentAssetAmount.toFloat()
+        editingCurrentAsset = currentAssetAmount
         userProfile?.let {
-            editingMonthlyInvestment = it.monthlyInvestment.toFloat()
-            editingMonthlyIncome = it.desiredMonthlyIncome.toFloat()
+            editingMonthlyInvestment = it.monthlyInvestment
+            editingMonthlyIncome = it.desiredMonthlyIncome
             editingPreReturnRate = it.preRetirementReturnRate.toFloat()
             editingPostReturnRate = it.postRetirementReturnRate.toFloat()
         }
@@ -83,11 +88,9 @@ fun SimulationSetupView(
             // 기본 설정 섹션
             BasicSettingsSection(
                 currentAsset = editingCurrentAsset,
-                onCurrentAssetChange = { editingCurrentAsset = it },
                 monthlyInvestment = editingMonthlyInvestment,
-                onMonthlyInvestmentChange = { editingMonthlyInvestment = it },
                 monthlyIncome = editingMonthlyIncome,
-                onMonthlyIncomeChange = { editingMonthlyIncome = it }
+                onAmountEditRequest = { showAmountEditSheet = it }
             )
             
             // 수익률 설정 섹션
@@ -102,16 +105,16 @@ fun SimulationSetupView(
             FailureThresholdSection(
                 failureThreshold = failureThreshold,
                 onFailureThresholdChange = { failureThreshold = it },
-                currentAsset = editingCurrentAsset.toDouble(),
-                monthlyInvestment = editingMonthlyInvestment.toDouble(),
-                monthlyIncome = editingMonthlyIncome.toDouble(),
+                currentAsset = editingCurrentAsset,
+                monthlyInvestment = editingMonthlyInvestment,
+                monthlyIncome = editingMonthlyIncome,
                 preReturnRate = editingPreReturnRate.toDouble(),
                 postReturnRate = editingPostReturnRate.toDouble()
             )
             
             // 시뮬레이션 요약
             SimulationSummarySection(
-                monthlyIncome = editingMonthlyIncome.toDouble(),
+                monthlyIncome = editingMonthlyIncome,
                 postReturnRate = editingPostReturnRate.toDouble(),
                 preReturnRate = editingPreReturnRate.toDouble()
             )
@@ -122,9 +125,9 @@ fun SimulationSetupView(
             onClick = {
                 // 1. 설정값 DB에 저장 (DashboardScreen과 동기화 - 비동기)
                 viewModel.updateSettings(
-                    currentAsset = editingCurrentAsset.toDouble(),
-                    desiredMonthlyIncome = editingMonthlyIncome.toDouble(),
-                    monthlyInvestment = editingMonthlyInvestment.toDouble(),
+                    currentAsset = editingCurrentAsset,
+                    desiredMonthlyIncome = editingMonthlyIncome,
+                    monthlyInvestment = editingMonthlyInvestment,
                     preRetirementReturnRate = editingPreReturnRate.toDouble(),
                     postRetirementReturnRate = editingPostReturnRate.toDouble()
                 )
@@ -136,14 +139,35 @@ fun SimulationSetupView(
                 
                 // 3. 시뮬레이션 시작 (편집한 값을 직접 전달하여 DB 업데이트를 기다리지 않음)
                 viewModel.runAllSimulations(
-                    overrideCurrentAsset = editingCurrentAsset.toDouble(),
-                    overrideMonthlyInvestment = editingMonthlyInvestment.toDouble(),
-                    overrideDesiredMonthlyIncome = editingMonthlyIncome.toDouble(),
+                    overrideCurrentAsset = editingCurrentAsset,
+                    overrideMonthlyInvestment = editingMonthlyInvestment,
+                    overrideDesiredMonthlyIncome = editingMonthlyIncome,
                     overridePreReturnRate = editingPreReturnRate.toDouble(),
                     overridePostReturnRate = editingPostReturnRate.toDouble()
                 )
                 onStart()
             }
+        )
+    }
+    
+    // Amount Edit Sheet
+    showAmountEditSheet?.let { type ->
+        AmountEditSheet(
+            type = type,
+            initialValue = when (type) {
+                AmountEditType.CURRENT_ASSET -> editingCurrentAsset
+                AmountEditType.MONTHLY_INVESTMENT -> editingMonthlyInvestment
+                AmountEditType.DESIRED_MONTHLY_INCOME -> editingMonthlyIncome
+            },
+            onConfirm = { newValue ->
+                when (type) {
+                    AmountEditType.CURRENT_ASSET -> editingCurrentAsset = newValue
+                    AmountEditType.MONTHLY_INVESTMENT -> editingMonthlyInvestment = newValue
+                    AmountEditType.DESIRED_MONTHLY_INCOME -> editingMonthlyIncome = newValue
+                }
+                showAmountEditSheet = null
+            },
+            onDismiss = { showAmountEditSheet = null }
         )
     }
 }
@@ -184,12 +208,10 @@ private fun SetupHeader(onBack: () -> Unit) {
 
 @Composable
 private fun BasicSettingsSection(
-    currentAsset: Float,
-    onCurrentAssetChange: (Float) -> Unit,
-    monthlyInvestment: Float,
-    onMonthlyInvestmentChange: (Float) -> Unit,
-    monthlyIncome: Float,
-    onMonthlyIncomeChange: (Float) -> Unit
+    currentAsset: Double,
+    monthlyInvestment: Double,
+    monthlyIncome: Double,
+    onAmountEditRequest: (AmountEditType) -> Unit
 ) {
     Column(
         modifier = Modifier.padding(horizontal = ExitSpacing.MD),
@@ -205,102 +227,89 @@ private fun BasicSettingsSection(
                 .padding(ExitSpacing.MD),
             verticalArrangement = Arrangement.spacedBy(ExitSpacing.MD)
         ) {
-            // 현재 자산 + 조정 버튼
-            AssetSliderWithButtons(
+            // 현재 자산
+            AmountEditRow(
+                label = "현재 자산",
                 value = currentAsset,
-                onValueChange = onCurrentAssetChange
+                valueFormatter = { ExitNumberFormatter.formatToEokManWon(it) },
+                accentColor = ExitColors.PrimaryText,
+                onEditClick = { onAmountEditRequest(AmountEditType.CURRENT_ASSET) }
             )
             
             // 매월 투자금액
-            ExitSlider(
-                value = monthlyInvestment,
-                onValueChange = onMonthlyInvestmentChange,
-                valueRange = 0f..10_000_000f,
+            AmountEditRow(
                 label = "매월 투자금액",
-                valueFormatter = { ExitNumberFormatter.formatToManWon(it.toDouble()) },
+                value = monthlyInvestment,
+                valueFormatter = { ExitNumberFormatter.formatToManWon(it) },
                 accentColor = ExitColors.Positive,
-                step = 100_000f
+                onEditClick = { onAmountEditRequest(AmountEditType.MONTHLY_INVESTMENT) }
             )
             
             // 은퇴 후 희망 월수입
-            ExitSlider(
-                value = monthlyIncome,
-                onValueChange = onMonthlyIncomeChange,
-                valueRange = 500_000f..20_000_000f,
+            AmountEditRow(
                 label = "은퇴 후 월수입",
-                valueFormatter = { ExitNumberFormatter.formatToManWon(it.toDouble()) },
+                value = monthlyIncome,
+                valueFormatter = { ExitNumberFormatter.formatToManWon(it) },
                 accentColor = ExitColors.Accent,
-                step = 100_000f
+                onEditClick = { onAmountEditRequest(AmountEditType.DESIRED_MONTHLY_INCOME) }
             )
         }
     }
 }
 
 @Composable
-private fun AssetSliderWithButtons(
-    value: Float,
-    onValueChange: (Float) -> Unit
+private fun AmountEditRow(
+    label: String,
+    value: Double,
+    valueFormatter: (Double) -> String,
+    accentColor: Color,
+    onEditClick: () -> Unit
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(ExitSpacing.XS)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // 커스텀 슬라이더
-        ExitSlider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = 0f..10_000_000_000f,
-            label = "현재 자산",
-            valueFormatter = { ExitNumberFormatter.formatToEokManWon(it.toDouble()) },
-            accentColor = ExitColors.PrimaryText
+        // 라벨
+        Text(
+            text = label,
+            style = ExitTypography.Caption,
+            color = ExitColors.SecondaryText
         )
         
-        // 조정 버튼들 (텍스트 크기에 맞게 fit)
+        // 값 + 편집 버튼
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM)
+            horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            AssetAdjustButton(
-                title = "+10만",
-                onClick = { onValueChange(minOf(value + 100_000f, 10_000_000_000f)) }
+            // 현재 값
+            Text(
+                text = valueFormatter(value),
+                style = ExitTypography.Caption,
+                fontWeight = FontWeight.Bold,
+                color = accentColor
             )
-            AssetAdjustButton(
-                title = "+100만",
-                onClick = { onValueChange(minOf(value + 1_000_000f, 10_000_000_000f)) }
-            )
-            AssetAdjustButton(
-                title = "+1000만",
-                onClick = { onValueChange(minOf(value + 10_000_000f, 10_000_000_000f)) }
-            )
-            AssetAdjustButton(
-                title = "+1억",
-                onClick = { onValueChange(minOf(value + 100_000_000f, 10_000_000_000f)) }
-            )
+            
+            // 편집 버튼 (수익률 +/- 버튼과 동일한 스타일)
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(ExitRadius.SM))
+                    .background(accentColor.copy(alpha = 0.15f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = ripple(color = accentColor)
+                    ) { onEditClick() }
+                    .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.XS),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "편집",
+                    style = ExitTypography.Caption,
+                    fontWeight = FontWeight.Medium,
+                    color = accentColor
+                )
+            }
         }
-    }
-}
-
-@Composable
-private fun AssetAdjustButton(
-    title: String,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(ExitRadius.SM))
-            .background(ExitColors.Accent.copy(alpha = 0.1f))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(color = ExitColors.Accent)
-            ) { onClick() }
-            .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.SM),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = title,
-            style = ExitTypography.Caption,
-            color = ExitColors.Accent,
-            maxLines = 1
-        )
     }
 }
 
@@ -328,27 +337,128 @@ private fun ReturnRateSection(
             verticalArrangement = Arrangement.spacedBy(ExitSpacing.MD)
         ) {
             // 은퇴 전 수익률
-            ExitSlider(
+            RateSliderWithButtons(
+                label = "은퇴 전 수익률",
                 value = preReturnRate,
                 onValueChange = onPreReturnRateChange,
-                valueRange = 0.5f..50f,
-                label = "은퇴 전 수익률",
-                valueFormatter = { String.format("%.1f%%", it) },
-                accentColor = ExitColors.Accent,
-                step = 0.5f
+                minValue = 0.5f,
+                maxValue = 50f,
+                step = 0.5f,
+                accentColor = ExitColors.Accent
             )
             
-            // 은퇴 후 수익률 (물가상승률 반영하여 설정)
-            ExitSlider(
+            // 은퇴 후 수익률
+            RateSliderWithButtons(
+                label = "은퇴 후 수익률",
                 value = postReturnRate,
                 onValueChange = onPostReturnRateChange,
-                valueRange = 0.5f..50f,
-                label = "은퇴 후 수익률",
-                valueFormatter = { String.format("%.1f%%", it) },
-                accentColor = ExitColors.Caution,
-                step = 0.5f
+                minValue = 0.5f,
+                maxValue = 50f,
+                step = 0.5f,
+                accentColor = ExitColors.Caution
             )
         }
+    }
+}
+
+@Composable
+private fun RateSliderWithButtons(
+    label: String,
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    minValue: Float,
+    maxValue: Float,
+    step: Float,
+    accentColor: Color
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(ExitSpacing.XS)
+    ) {
+        // 라벨 + 값 + 버튼
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // 라벨
+            Text(
+                text = label,
+                style = ExitTypography.Caption,
+                color = ExitColors.SecondaryText
+            )
+            
+            // +/- 버튼과 값
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // - 버튼
+                RateButton(
+                    text = "−",
+                    enabled = value > minValue,
+                    accentColor = accentColor,
+                    onClick = { onValueChange(maxOf(value - step, minValue)) }
+                )
+                
+                // 현재 값
+                Text(
+                    text = String.format("%.1f%%", value),
+                    style = ExitTypography.Caption,
+                    fontWeight = FontWeight.Bold,
+                    color = accentColor,
+                    modifier = Modifier.width(52.dp),
+                    textAlign = TextAlign.Center
+                )
+                
+                // + 버튼
+                RateButton(
+                    text = "+",
+                    enabled = value < maxValue,
+                    accentColor = accentColor,
+                    onClick = { onValueChange(minOf(value + step, maxValue)) }
+                )
+            }
+        }
+        
+        // 슬라이더
+        ExitSlider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = minValue..maxValue,
+            accentColor = accentColor,
+            step = step
+        )
+    }
+}
+
+@Composable
+private fun RateButton(
+    text: String,
+    enabled: Boolean,
+    accentColor: Color,
+    onClick: () -> Unit
+) {
+    val buttonColor = if (enabled) accentColor else ExitColors.TertiaryText
+    val backgroundColor = if (enabled) accentColor.copy(alpha = 0.15f) else ExitColors.Divider.copy(alpha = 0.5f)
+    
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(ExitRadius.SM))
+            .background(backgroundColor)
+            .clickable(
+                enabled = enabled,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(color = accentColor)
+            ) { onClick() }
+            .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.XS),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = ExitTypography.Body,
+            fontWeight = FontWeight.Bold,
+            color = buttonColor
+        )
     }
 }
 
