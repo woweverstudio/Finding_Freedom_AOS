@@ -57,11 +57,11 @@ fun CustomNumberKeyboard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM)
         ) {
-            QuickButton(text = "+1만", onClick = { onQuickAmountClick(10_000.0) }, modifier = Modifier.weight(1f))
-            QuickButton(text = "+10만", onClick = { onQuickAmountClick(100_000.0) }, modifier = Modifier.weight(1f))
-            QuickButton(text = "+100만", onClick = { onQuickAmountClick(1_000_000.0) }, modifier = Modifier.weight(1f))
-            QuickButton(text = "+1000만", onClick = { onQuickAmountClick(10_000_000.0) }, modifier = Modifier.weight(1f))
-            QuickButton(text = "+1억", onClick = { onQuickAmountClick(100_000_000.0) }, modifier = Modifier.weight(1f))
+            QuickButton(text = "+1만", onClick = { onQuickAmountClick(10_000.0) }, modifier = Modifier.weight(0.85f))
+            QuickButton(text = "+10만", onClick = { onQuickAmountClick(100_000.0) }, modifier = Modifier.weight(1.05f))
+            QuickButton(text = "+100만", onClick = { onQuickAmountClick(1_000_000.0) }, modifier = Modifier.weight(1.1f))
+            QuickButton(text = "+1000만", onClick = { onQuickAmountClick(10_000_000.0) }, modifier = Modifier.weight(1.15f))
+            QuickButton(text = "+1억", onClick = { onQuickAmountClick(100_000_000.0) }, modifier = Modifier.weight(0.85f))
         }
         
         // 숫자 키패드
@@ -260,7 +260,9 @@ private fun QuickButton(
             style = ExitTypography.Caption,
             fontWeight = FontWeight.Medium,
             color = ExitColors.Accent,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            softWrap = false
         )
     }
 }

@@ -99,7 +99,7 @@ object ExitTypography {
     
     /** 중형 숫자 (42sp Heavy, Monospace) */
     val NumberDisplay = TextStyle(
-        fontFamily = FontFamily.Monospace,
+        fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Black,
         fontSize = 42.sp,
         lineHeight = 48.sp
