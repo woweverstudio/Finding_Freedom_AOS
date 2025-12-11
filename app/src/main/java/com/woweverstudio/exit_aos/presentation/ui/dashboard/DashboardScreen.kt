@@ -201,8 +201,30 @@ fun DashboardScreen(
                         onToggleHideAmounts = {
                             haptic.light()
                             viewModel.toggleHideAmounts()
+                        },
+                        onExpandHeader = {
+                            haptic.light()
+                            isHeaderExpanded = true
                         }
                     )
+                }
+                
+                // 자산 성장 차트 (은퇴 전 사용자만)
+                item {
+                    retirementResult?.let { result ->
+                        userProfile?.let { profile ->
+                            if (!result.isRetirementReady) {
+                                AssetGrowthChart(
+                                    currentAsset = result.currentAssets,
+                                    targetAsset = result.targetAssets,
+                                    monthlyInvestment = profile.monthlyInvestment,
+                                    preRetirementReturnRate = profile.preRetirementReturnRate,
+                                    monthsToRetirement = result.monthsToRetirement,
+                                    modifier = Modifier.padding(horizontal = ExitSpacing.MD)
+                                )
+                            }
+                        }
+                    }
                 }
                 
                 // 시뮬레이션 유도 버튼
@@ -308,12 +330,6 @@ private fun DDayHeader(
                             color = ExitColors.SecondaryText
                         )
                     }
-                    
-                    // 10년 이상 남았을 때 힌트 버튼 표시
-                    if (retirementResult.monthsToRetirement >= 120) {
-                        Spacer(modifier = Modifier.height(ExitSpacing.MD))
-                        AdjustmentHintButton(onClick = onExpandHeader)
-                    }
                 }
             } else {
                 Text(
@@ -327,35 +343,13 @@ private fun DDayHeader(
 }
 
 @Composable
-private fun AdjustmentHintButton(
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(ExitRadius.Full))
-            .background(ExitColors.Accent.copy(alpha = 0.15f))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(color = ExitColors.Accent)
-            ) { onClick() }
-            .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.SM)
-    ) {
-        Text(
-            text = "더 빨리 탈출하기",
-            style = ExitTypography.Caption2,
-            fontWeight = FontWeight.Medium,
-            color = ExitColors.Accent
-        )
-    }
-}
-
-@Composable
 private fun ProgressSection(
     viewModel: AppStateViewModel,
     retirementResult: com.woweverstudio.exit_aos.domain.usecase.RetirementCalculationResult?,
     userProfile: com.woweverstudio.exit_aos.domain.model.UserProfile?,
     hideAmounts: Boolean,
-    onToggleHideAmounts: () -> Unit
+    onToggleHideAmounts: () -> Unit,
+    onExpandHeader: () -> Unit
 ) {
     Column(
         modifier = Modifier.padding(horizontal = ExitSpacing.MD),
@@ -388,7 +382,8 @@ private fun ProgressSection(
             DetailedCalculationCard(
                 retirementResult = retirementResult,
                 userProfile = userProfile,
-                hideAmounts = hideAmounts
+                hideAmounts = hideAmounts,
+                onExpandHeader = onExpandHeader
             )
         }
     }
@@ -423,7 +418,8 @@ private fun AmountVisibilityToggle(
 private fun DetailedCalculationCard(
     retirementResult: com.woweverstudio.exit_aos.domain.usecase.RetirementCalculationResult,
     userProfile: com.woweverstudio.exit_aos.domain.model.UserProfile?,
-    hideAmounts: Boolean
+    hideAmounts: Boolean,
+    onExpandHeader: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -571,6 +567,7 @@ private fun DetailedCalculationCard(
                         },
                         style = ExitTypography.Subheadline
                     )
+                    
                 }
             }
         }
