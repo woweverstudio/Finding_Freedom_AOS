@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -228,12 +229,14 @@ private fun HeaderButton(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = ExitColors.Accent)
             ) { onToggle() }
-            .pointerInput(Unit) {
-                detectVerticalDragGestures { _, dragAmount ->
-                    if (!isExpanded && dragAmount > 20) {
-                        onDragDown()
+            .pointerInput(isExpanded) {
+                detectVerticalDragGestures(
+                    onDragStart = {
+                        if (!isExpanded) {
+                            onDragDown()
+                        }
                     }
-                }
+                ) { _, _ -> }
             }
             .padding(horizontal = ExitSpacing.MD)
             .padding(top = if (isExpanded) ExitSpacing.SM else ExitSpacing.MD)

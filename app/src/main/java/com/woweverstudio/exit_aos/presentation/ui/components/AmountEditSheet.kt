@@ -160,8 +160,7 @@ fun AmountEditSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        horizontal = ExitSpacing.MD,
-                        vertical = ExitSpacing.MD
+                        horizontal = ExitSpacing.MD
                     ),
                 horizontalArrangement = Arrangement.spacedBy(ExitSpacing.MD)
             ) {

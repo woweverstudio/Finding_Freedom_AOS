@@ -112,7 +112,7 @@ private fun OnboardingStepContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = ExitSpacing.LG)
+            .padding(top = ExitSpacing.SM)
     ) {
         // 진행률 표시
         ProgressIndicator(
@@ -238,8 +238,7 @@ private fun BottomButtons(
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                horizontal = ExitSpacing.MD,
-                vertical = ExitSpacing.XL
+                horizontal = ExitSpacing.MD
             ),
         horizontalArrangement = Arrangement.spacedBy(ExitSpacing.MD)
     ) {
