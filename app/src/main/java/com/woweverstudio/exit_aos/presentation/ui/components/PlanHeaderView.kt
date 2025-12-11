@@ -103,6 +103,25 @@ fun PlanHeaderView(
     // 햅틱 피드백
     val haptic = rememberHaptic()
     
+    // 변경 여부 확인
+    val hasChanges = remember(
+        editingCurrentAsset,
+        editingMonthlyIncome,
+        editingMonthlyInvestment,
+        editingPreReturnRate,
+        editingPostReturnRate,
+        currentAssetAmount,
+        userProfile
+    ) {
+        val assetChanged = kotlin.math.abs(editingCurrentAsset - currentAssetAmount.toFloat()) > 1
+        val incomeChanged = userProfile?.let { kotlin.math.abs(editingMonthlyIncome - it.desiredMonthlyIncome.toFloat()) > 1 } ?: false
+        val investmentChanged = userProfile?.let { kotlin.math.abs(editingMonthlyInvestment - it.monthlyInvestment.toFloat()) > 1 } ?: false
+        val preRateChanged = userProfile?.let { kotlin.math.abs(editingPreReturnRate - it.preRetirementReturnRate.toFloat()) > 0.01f } ?: false
+        val postRateChanged = userProfile?.let { kotlin.math.abs(editingPostReturnRate - it.postRetirementReturnRate.toFloat()) > 0.01f } ?: false
+        
+        assetChanged || incomeChanged || investmentChanged || preRateChanged || postRateChanged
+    }
+    
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -184,7 +203,8 @@ fun PlanHeaderView(
                         editingPostReturnRate.toDouble()
                     )
                     onExpandedChange(false)
-                }
+                },
+                hasChanges = hasChanges
             )
         }
     }
@@ -339,7 +359,8 @@ private fun EditPanel(
     editingPostReturnRate: Float,
     onPostReturnRateChange: (Float) -> Unit,
     onAmountEditClick: (AmountEditType) -> Unit,
-    onApply: () -> Unit
+    onApply: () -> Unit,
+    hasChanges: Boolean = false
 ) {
     Column(
         modifier = Modifier
@@ -398,11 +419,30 @@ private fun EditPanel(
         )
         
         // 적용 버튼
-        ExitSecondaryButton(
-            text = "적용",
-            onClick = onApply,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(ExitRadius.MD))
+                .background(ExitColors.CardBackground)
+                .border(
+                    width = 1.dp,
+                    color = if (hasChanges) ExitColors.Accent else ExitColors.Divider,
+                    shape = RoundedCornerShape(ExitRadius.MD)
+                )
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(color = if (hasChanges) ExitColors.Accent else ExitColors.SecondaryText)
+                ) { onApply() }
+                .padding(vertical = ExitSpacing.MD),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = if (hasChanges) "적용" else "확인",
+                style = ExitTypography.Body,
+                fontWeight = FontWeight.SemiBold,
+                color = if (hasChanges) ExitColors.Accent else ExitColors.SecondaryText
+            )
+        }
     }
 }
 
