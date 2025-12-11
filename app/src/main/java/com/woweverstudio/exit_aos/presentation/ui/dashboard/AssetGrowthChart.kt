@@ -3,8 +3,12 @@ package com.woweverstudio.exit_aos.presentation.ui.dashboard
 import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.material.icons.outlined.TouchApp
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.ui.platform.LocalView
+import com.woweverstudio.exit_aos.util.HapticService
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -19,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
@@ -35,7 +38,6 @@ import com.woweverstudio.exit_aos.util.ExitNumberFormatter
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.max
-import kotlin.math.min
 
 /**
  * 자산 성장 예측 차트 (인터랙티브)
@@ -50,6 +52,8 @@ fun AssetGrowthChart(
     modifier: Modifier = Modifier
 ) {
     var selectedProgress by remember { mutableStateOf<Float?>(null) }
+    var isInteracting by remember { mutableStateOf(false) }
+    val view = LocalView.current
     
     val yearsToRetirement = max(1, monthsToRetirement / 12)
     
@@ -81,7 +85,17 @@ fun AssetGrowthChart(
         verticalArrangement = Arrangement.spacedBy(ExitSpacing.LG)
     ) {
         // 헤더
-        HeaderSection(selectedData = selectedData)
+        HeaderSection(
+            selectedData = selectedData,
+            isInteracting = isInteracting,
+            onToggleInteraction = {
+                HapticService.light(view)
+                isInteracting = !isInteracting
+                if (!isInteracting) {
+                    selectedProgress = null
+                }
+            }
+        )
         
         // 차트
         InteractiveChartSection(
@@ -91,6 +105,7 @@ fun AssetGrowthChart(
             preRetirementReturnRate = preRetirementReturnRate,
             monthsToRetirement = monthsToRetirement,
             selectedProgress = selectedProgress,
+            isInteracting = isInteracting,
             onProgressChanged = { selectedProgress = it }
         )
         
@@ -112,54 +127,93 @@ private data class SelectedData(
 )
 
 @Composable
-private fun HeaderSection(selectedData: SelectedData?) {
+private fun HeaderSection(
+    selectedData: SelectedData?,
+    isInteracting: Boolean,
+    onToggleInteraction: () -> Unit
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(ExitSpacing.MD)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM)
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(
-                imageVector = Icons.Default.ShowChart,
-                contentDescription = null,
-                tint = ExitColors.Accent,
-                modifier = Modifier.size(18.dp)
-            )
-            Text(
-                text = "자산 성장 예측",
-                style = ExitTypography.Subheadline,
-                fontWeight = FontWeight.SemiBold,
-                color = ExitColors.PrimaryText
-            )
-        }
-        
-        if (selectedData != null) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ShowChart,
+                    contentDescription = null,
+                    tint = ExitColors.Accent,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = "자산 성장 예측",
+                    style = ExitTypography.Subheadline,
+                    fontWeight = FontWeight.SemiBold,
+                    color = ExitColors.PrimaryText
+                )
+            }
+            
+            Spacer(modifier = Modifier.weight(1f))
+            
+            // 인터랙션 토글 버튼
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier
                     .clip(RoundedCornerShape(ExitRadius.SM))
-                    .background(ExitColors.Accent.copy(alpha = 0.1f))
+                    .background(
+                        if (isInteracting) ExitColors.Accent
+                        else ExitColors.Accent.copy(alpha = 0.1f)
+                    )
+                    .clickable { onToggleInteraction() }
                     .padding(horizontal = ExitSpacing.SM, vertical = ExitSpacing.XS)
             ) {
+                Icon(
+                    imageVector = if (isInteracting) Icons.Default.TouchApp else Icons.Outlined.TouchApp,
+                    contentDescription = null,
+                    tint = if (isInteracting) ExitColors.CardBackground else ExitColors.Accent,
+                    modifier = Modifier.size(12.dp)
+                )
                 Text(
-                    text = selectedData.date,
+                    text = if (isInteracting) "탐색 중" else "탐색",
+                    style = ExitTypography.Caption2,
+                    color = if (isInteracting) ExitColors.CardBackground else ExitColors.Accent
+                )
+            }
+        }
+        
+        if (isInteracting) {
+            if (selectedData != null) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(ExitSpacing.SM),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(ExitRadius.SM))
+                        .background(ExitColors.Accent.copy(alpha = 0.1f))
+                        .padding(horizontal = ExitSpacing.SM, vertical = ExitSpacing.XS)
+                ) {
+                    Text(
+                        text = selectedData.date,
+                        style = ExitTypography.Caption,
+                        color = ExitColors.SecondaryText
+                    )
+                    Text(
+                        text = ExitNumberFormatter.formatToEokMan(selectedData.asset),
+                        style = ExitTypography.Caption,
+                        fontWeight = FontWeight.SemiBold,
+                        color = ExitColors.Accent
+                    )
+                }
+            } else {
+                Text(
+                    text = "차트를 드래그하여 시점별 자산을 확인하세요",
                     style = ExitTypography.Caption,
                     color = ExitColors.SecondaryText
                 )
-                Text(
-                    text = ExitNumberFormatter.formatToEokMan(selectedData.asset),
-                    style = ExitTypography.Caption,
-                    fontWeight = FontWeight.SemiBold,
-                    color = ExitColors.Accent
-                )
             }
-        } else {
-            Text(
-                text = "차트를 터치하여 시점별 자산을 확인하세요",
-                style = ExitTypography.Caption,
-                color = ExitColors.SecondaryText
-            )
         }
     }
 }
@@ -172,6 +226,7 @@ private fun InteractiveChartSection(
     preRetirementReturnRate: Double,
     monthsToRetirement: Int,
     selectedProgress: Float?,
+    isInteracting: Boolean,
     onProgressChanged: (Float) -> Unit
 ) {
     val accentColor = ExitColors.Accent
@@ -217,24 +272,29 @@ private fun InteractiveChartSection(
         modifier = Modifier
             .fillMaxWidth()
             .height(200.dp)
-            .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                    val leftPadding = 45.dp.toPx()
-                    val bottomPadding = 24.dp.toPx()
-                    val chartWidth = size.width - leftPadding
-                    val progress = ((offset.x - leftPadding) / chartWidth).coerceIn(0f, 1f)
-                    onProgressChanged(progress)
+            .then(
+                if (isInteracting) {
+                    Modifier.pointerInput(Unit) {
+                        detectDragGestures(
+                            onDragStart = { offset ->
+                                val leftPadding = 45.dp.toPx()
+                                val chartWidth = size.width - leftPadding
+                                val progress = ((offset.x - leftPadding) / chartWidth).coerceIn(0f, 1f)
+                                onProgressChanged(progress)
+                            },
+                            onDrag = { change, _ ->
+                                change.consume()
+                                val leftPadding = 45.dp.toPx()
+                                val chartWidth = size.width - leftPadding
+                                val progress = ((change.position.x - leftPadding) / chartWidth).coerceIn(0f, 1f)
+                                onProgressChanged(progress)
+                            }
+                        )
+                    }
+                } else {
+                    Modifier
                 }
-            }
-            .pointerInput(Unit) {
-                detectDragGestures { change, _ ->
-                    change.consume()
-                    val leftPadding = 45.dp.toPx()
-                    val chartWidth = size.width - leftPadding
-                    val progress = ((change.position.x - leftPadding) / chartWidth).coerceIn(0f, 1f)
-                    onProgressChanged(progress)
-                }
-            }
+            )
     ) {
         val width = size.width
         val height = size.height
@@ -417,7 +477,7 @@ private fun YearlyMilestonesSection(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .clip(RoundedCornerShape(ExitRadius.SM))
-                    .background(ExitColors.Background)
+                    .background(ExitColors.SecondaryCardBackground)
                     .padding(horizontal = ExitSpacing.MD, vertical = ExitSpacing.SM)
             ) {
                 Text(
