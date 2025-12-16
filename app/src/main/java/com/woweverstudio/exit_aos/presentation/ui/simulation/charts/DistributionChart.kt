@@ -88,14 +88,14 @@ fun DistributionChart(
         ) {
             Text(
                 text = "${peakYear}년차",
-                style = ExitTypography.Title.copy(fontSize = 36.sp),
+                style = ExitTypography.Title.copy(fontSize = 34.sp),
                 fontWeight = FontWeight.Bold,
                 color = ExitColors.Accent
             )
             
             Text(
                 text = "에 달성할 가능성이 가장 높아요",
-                style = ExitTypography.Body,
+                style = ExitTypography.Caption,
                 color = ExitColors.SecondaryText,
                 modifier = Modifier.padding(bottom = 4.dp)
             )

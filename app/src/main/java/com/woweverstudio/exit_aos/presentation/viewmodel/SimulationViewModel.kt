@@ -176,6 +176,38 @@ class SimulationViewModel @Inject constructor(
     val representativePaths: com.woweverstudio.exit_aos.domain.usecase.RepresentativePaths?
         get() = _monteCarloResult.value?.representativePaths
     
+    // MARK: - Settings Change Detection (iOS의 planSettingsChangeTrigger와 동일한 역할)
+    
+    /** 마지막 시뮬레이션에 사용된 설정의 해시값 */
+    private var lastSimulationSettingsHash: Int = 0
+    
+    /** 현재 설정의 해시값 계산 */
+    private fun calculateSettingsHash(): Int {
+        val asset = _currentAsset.value?.amount ?: 0.0
+        val profile = _userProfile.value
+        return listOf(
+            asset.hashCode(),
+            profile?.desiredMonthlyIncome?.hashCode() ?: 0,
+            profile?.monthlyInvestment?.hashCode() ?: 0,
+            profile?.preRetirementReturnRate?.hashCode() ?: 0,
+            profile?.postRetirementReturnRate?.hashCode() ?: 0
+        ).fold(0) { acc, hash -> acc * 31 + hash }
+    }
+    
+    /** 설정 변경 감지 및 결과 초기화 (iOS의 onChange(planSettingsChangeTrigger)와 동일) */
+    private fun checkAndResetIfSettingsChanged() {
+        val currentHash = calculateSettingsHash()
+        
+        // 시뮬레이션 결과가 있고, 설정이 변경되었으면 리셋
+        if (_monteCarloResult.value != null && 
+            lastSimulationSettingsHash != 0 && 
+            currentHash != lastSimulationSettingsHash &&
+            !_isSimulating.value) {
+            
+            resetSimulationResults()
+        }
+    }
+    
     // MARK: - Initialization
     
     init {
@@ -188,12 +220,16 @@ class SimulationViewModel @Inject constructor(
                 repository.getAsset().collect { asset ->
                     _currentAsset.value = asset
                     _currentAssetAmount.value = asset?.amount ?: 0.0
+                    // 설정 변경 감지
+                    checkAndResetIfSettingsChanged()
                 }
             }
             
             launch {
                 repository.getUserProfile().collect { profile ->
                     _userProfile.value = profile
+                    // 설정 변경 감지
+                    checkAndResetIfSettingsChanged()
                 }
             }
         }
@@ -301,6 +337,9 @@ class SimulationViewModel @Inject constructor(
                 
                 _retirementResult.value = retirementResult
                 _simulationPhase.value = SimulationPhase.IDLE
+                
+                // 시뮬레이션 완료 시 현재 설정의 해시값 저장 (설정 변경 감지용)
+                lastSimulationSettingsHash = calculateSettingsHash()
             } catch (e: Exception) {
                 // 에러 로깅 및 안전한 종료
                 e.printStackTrace()
@@ -374,6 +413,21 @@ class SimulationViewModel @Inject constructor(
             SimulationScreenState.Results
         } else {
             SimulationScreenState.Empty
+        }
+    }
+    
+    /**
+     * 시뮬레이션 결과 초기화 및 Setup 화면으로 이동 (Plan 설정 변경 시 호출)
+     */
+    fun resetSimulationResults() {
+        _monteCarloResult.value = null
+        _retirementResult.value = null
+        _simulationProgress.value = 0f
+        _simulationPhase.value = SimulationPhase.IDLE
+        
+        // 결과 화면에 있었다면 Setup 화면으로 이동
+        if (_currentScreenState.value == SimulationScreenState.Results) {
+            _currentScreenState.value = SimulationScreenState.Setup
         }
     }
     

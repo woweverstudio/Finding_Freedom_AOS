@@ -657,22 +657,25 @@ private fun AssetRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = ExitSpacing.SM, vertical = ExitSpacing.XS)
+            .padding(horizontal = ExitSpacing.SM, vertical = ExitSpacing.XS),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
             style = ExitTypography.Caption2,
             color = color,
-            modifier = Modifier.width(60.dp)
+            modifier = Modifier.width(60.dp),
+            maxLines = 1
         )
         listOf(10, 20, 30, 40).forEach { year ->
             val asset = if (year < data.size) data[year] else (data.lastOrNull() ?: 0.0)
             Text(
-                text = formatSimple(asset),
+                text = formatTableValue(asset),
                 style = ExitTypography.Caption2,
                 color = if (asset > 0) ExitColors.PrimaryText else ExitColors.Warning,
                 modifier = Modifier.weight(1f),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                maxLines = 1
             )
         }
     }
@@ -793,13 +796,30 @@ private fun calculateChangeRate(data: List<Double>): Double {
     return (last - first) / first * 100
 }
 
+/** 금액을 억단위로 간결하게 표시 (예: 7230만원 → 0.72억) */
 private fun formatSimple(amount: Double): String {
     if (amount <= 0) return "0원"
     val eok = amount / 100_000_000
-    return if (eok >= 1) {
-        String.format("%.1f억", eok)
-    } else {
-        val man = amount / 10_000
-        String.format("%.0f만원", man)
+    return when {
+        eok >= 1 -> String.format("%.2f억", eok)
+        eok >= 0.01 -> String.format("%.2f억", eok)  // 100만원 이상 억단위로 표시
+        else -> {
+            val man = amount / 10_000
+            String.format("%.0f만원", man)
+        }
+    }
+}
+
+/** 테이블용 짧은 포맷 (억단위로 간결하게, 소수점 둘째자리) */
+private fun formatTableValue(amount: Double): String {
+    if (amount <= 0) return "0"
+    val eok = amount / 100_000_000
+    return when {
+        eok >= 1 -> String.format("%.2f억", eok)
+        eok >= 0.01 -> String.format("%.2f억", eok)  // 100만원 이상 억단위로 표시
+        else -> {
+            val man = amount / 10_000
+            String.format("%.0f만", man)
+        }
     }
 }

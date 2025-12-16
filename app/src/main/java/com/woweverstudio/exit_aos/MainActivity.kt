@@ -2,6 +2,7 @@ package com.woweverstudio.exit_aos
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
@@ -53,7 +54,12 @@ class MainActivity : ComponentActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        
+        // Edge-to-edge 설정 (네비게이션 바 다크 모드 고정)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.parseColor("#0A0A0A"))
+        )
         
         // 앱 실행 기록 (3번째 실행 시 리뷰 요청)
         ReviewService.recordAppLaunch(this)

@@ -405,7 +405,7 @@ private fun EditPanel(
             value = editingPreReturnRate,
             onValueChange = onPreReturnRateChange,
             minValue = 0.5f,
-            maxValue = 50f,
+            maxValue = 30f,
             step = 0.5f,
             accentColor = ExitColors.Accent
         )
@@ -416,7 +416,7 @@ private fun EditPanel(
             value = editingPostReturnRate,
             onValueChange = onPostReturnRateChange,
             minValue = 0.5f,
-            maxValue = 50f,
+            maxValue = 30f,
             step = 0.5f,
             accentColor = ExitColors.Caution
         )

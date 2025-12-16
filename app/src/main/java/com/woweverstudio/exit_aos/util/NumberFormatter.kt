@@ -107,6 +107,35 @@ object ExitNumberFormatter {
     }
     
     /**
+     * 원 단위를 억단위로 간결하게 표시 (카드용)
+     * @param value 원 단위 금액
+     * @return 포맷된 문자열 (예: "3.5억", "0.7억")
+     * 항상 억단위로 표시 (1000만원 이상)
+     */
+    fun formatToEokSimple(value: Double): String {
+        if (value <= 0) return "0원"
+        
+        val absValue = abs(value)
+        val eok = absValue / 100_000_000
+        val sign = if (value < 0) "-" else ""
+        
+        return when {
+            eok >= 1 -> {
+                if (eok == eok.toLong().toDouble()) {
+                    "$sign${eok.toLong()}억"
+                } else {
+                    "$sign${String.format("%.1f", eok)}억"
+                }
+            }
+            eok >= 0.01 -> "$sign${String.format("%.1f", eok)}억"  // 100만원 이상
+            else -> {
+                val man = absValue / 10_000
+                "$sign${man.toLong()}만원"
+            }
+        }
+    }
+    
+    /**
      * 축약된 금액 표시 (홈화면용)
      * @param current 현재 금액
      * @param target 목표 금액

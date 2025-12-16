@@ -201,6 +201,8 @@ class AppStateViewModel @Inject constructor(
             
             // D-Day 애니메이션 트리거
             _dDayAnimationTrigger.value = UUID.randomUUID().toString()
+            
+            // Note: 시뮬레이션 결과 초기화는 SimulationViewModel에서 Flow 관찰로 자동 처리됨
         }
     }
     
@@ -217,6 +219,8 @@ class AppStateViewModel @Inject constructor(
                 val newAsset = Asset(amount = amount)
                 repository.saveAsset(newAsset)
             }
+            
+            // Note: 시뮬레이션 결과 초기화는 SimulationViewModel에서 Flow 관찰로 자동 처리됨
         }
     }
     

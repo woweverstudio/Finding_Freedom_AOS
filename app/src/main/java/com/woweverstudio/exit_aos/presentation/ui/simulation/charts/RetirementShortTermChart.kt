@@ -710,13 +710,16 @@ private fun calculateChangeRate(data: List<Double>): Double {
     return (last - first) / first * 100
 }
 
+/** 금액을 억단위로 간결하게 표시 (예: 7230만원 → 0.72억) */
 private fun formatSimple(amount: Double): String {
     if (amount <= 0) return "0원"
     val eok = amount / 100_000_000
-    return if (eok >= 1) {
-        String.format("%.1f억", eok)
-    } else {
-        val man = amount / 10_000
-        String.format("%.0f만원", man)
+    return when {
+        eok >= 1 -> String.format("%.2f억", eok)
+        eok >= 0.01 -> String.format("%.2f억", eok)  // 100만원 이상 억단위로 표시
+        else -> {
+            val man = amount / 10_000
+            String.format("%.0f만원", man)
+        }
     }
 }

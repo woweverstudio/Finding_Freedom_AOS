@@ -499,7 +499,7 @@ private fun DemoDistributionChart() {
             
             Text(
                 text = "에 달성할 가능성이 가장 높아요",
-                style = ExitTypography.Body,
+                style = ExitTypography.Caption,
                 color = ExitColors.SecondaryText,
                 modifier = Modifier.padding(bottom = 4.dp)
             )

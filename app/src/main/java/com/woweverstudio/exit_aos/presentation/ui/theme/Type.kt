@@ -8,117 +8,118 @@ import androidx.compose.ui.unit.sp
 
 /**
  * Exit 앱 타이포그래피
+ * Android는 iOS보다 폰트가 크게 보이므로 1~2sp씩 줄여서 적용
  */
 object ExitTypography {
     
     // MARK: - 제목
     
-    /** 대형 제목 (42sp Heavy) */
+    /** 대형 제목 (iOS 42pt → Android 40sp) */
     val LargeTitle = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Black,
-        fontSize = 42.sp,
-        lineHeight = 48.sp
+        fontSize = 40.sp,
+        lineHeight = 46.sp
     )
     
-    /** 제목 (32sp Bold) */
+    /** 제목 (iOS 32pt → Android 30sp) */
     val Title = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Bold,
-        fontSize = 32.sp,
-        lineHeight = 38.sp
+        fontSize = 30.sp,
+        lineHeight = 36.sp
     )
     
-    /** 중형 제목 (24sp Semibold) */
+    /** 중형 제목 (iOS 24pt → Android 22sp) */
     val Title2 = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 24.sp,
-        lineHeight = 30.sp
+        fontSize = 22.sp,
+        lineHeight = 28.sp
     )
     
-    /** 소형 제목 (20sp Semibold) */
+    /** 소형 제목 (iOS 20pt → Android 18sp) */
     val Title3 = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 20.sp,
-        lineHeight = 26.sp
-    )
-    
-    // MARK: - 본문
-    
-    /** 본문 (18sp Medium) */
-    val Body = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
         fontSize = 18.sp,
         lineHeight = 24.sp
     )
     
-    /** 서브 본문 (16sp Regular) */
-    val Subheadline = TextStyle(
+    // MARK: - 본문
+    
+    /** 본문 (iOS 18pt → Android 16sp) */
+    val Body = TextStyle(
         fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
+        fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
         lineHeight = 22.sp
     )
     
-    /** 캡션 (14sp Regular) */
+    /** 서브 본문 (iOS 16pt → Android 15sp) */
+    val Subheadline = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 15.sp,
+        lineHeight = 20.sp
+    )
+    
+    /** 캡션 (iOS 14pt → Android 13sp) */
     val Caption = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
-        fontSize = 14.sp,
-        lineHeight = 18.sp
-    )
-    
-    /** 소형 캡션 (12sp Regular) */
-    val Caption2 = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 12.sp,
-        lineHeight = 16.sp
-    )
-    
-    /** 소형 캡션 (13sp Semibold, Rounded) */
-    val Caption3 = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.SemiBold,
         fontSize = 13.sp,
         lineHeight = 17.sp
     )
     
+    /** 소형 캡션 (iOS 12pt → Android 11sp) */
+    val Caption2 = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 11.sp,
+        lineHeight = 15.sp
+    )
+    
+    /** 소형 캡션 (iOS 13pt → Android 12sp Semibold) */
+    val Caption3 = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 12.sp,
+        lineHeight = 16.sp
+    )
+    
     // MARK: - 숫자
     
-    /** 대형 점수 숫자 (96sp Heavy, Monospace) */
+    /** 대형 점수 숫자 (iOS 96pt → Android 92sp) */
     val ScoreDisplay = TextStyle(
         fontFamily = FontFamily.Monospace,
         fontWeight = FontWeight.Black,
-        fontSize = 96.sp,
-        lineHeight = 104.sp
+        fontSize = 92.sp,
+        lineHeight = 100.sp
     )
     
-    /** 중형 숫자 (42sp Heavy, Monospace) */
+    /** 중형 숫자 (iOS 42pt → Android 40sp) */
     val NumberDisplay = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Black,
-        fontSize = 42.sp,
-        lineHeight = 48.sp
+        fontSize = 40.sp,
+        lineHeight = 46.sp
     )
     
-    /** 숫자 (24sp Semibold, Monospace) */
+    /** 숫자 (iOS 24pt → Android 22sp) */
     val Number = TextStyle(
         fontFamily = FontFamily.Monospace,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 24.sp,
-        lineHeight = 30.sp
+        fontSize = 22.sp,
+        lineHeight = 28.sp
     )
     
-    /** 키패드 숫자 (28sp Medium) */
+    /** 키패드 숫자 (iOS 28pt → Android 26sp) */
     val Keypad = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Medium,
-        fontSize = 28.sp,
-        lineHeight = 34.sp
+        fontSize = 26.sp,
+        lineHeight = 32.sp
     )
 }
 

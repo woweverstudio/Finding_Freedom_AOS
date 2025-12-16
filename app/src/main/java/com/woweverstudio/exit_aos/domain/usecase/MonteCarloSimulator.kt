@@ -321,7 +321,8 @@ object MonteCarloSimulator {
     // MARK: - Representative Paths
     
     /**
-     * 대표 경로 추출 (iOS와 동일한 로직)
+     * 대표 경로 추출
+     * 샘플링된 경로에서 목표 개월 수와 가장 가까운 경로를 찾음
      */
     fun extractRepresentativePaths(
         paths: List<AssetPath>,
@@ -330,33 +331,35 @@ object MonteCarloSimulator {
         if (successMonths.isEmpty()) return null
         if (paths.isEmpty()) return null
         
+        // 성공한 시뮬레이션의 개월 수 분포에서 percentile 계산
         val sorted = successMonths.sorted()
         val sortedSize = sorted.size
         
-        // 안전한 인덱스 계산 (IndexOutOfBoundsException 방지)
-        val safeIndex = { size: Int, percent: Double -> 
-            (size * percent).toInt().coerceIn(0, size - 1)
+        val bestIndex = (sortedSize * 0.1).toInt().coerceIn(0, sortedSize - 1)
+        val medianIndex = sortedSize / 2
+        val worstIndex = (sortedSize * 0.9).toInt().coerceIn(0, sortedSize - 1)
+        
+        val bestMonths = sorted[bestIndex]      // 행운: 빠른 도달 (10 percentile)
+        val medianMonths = sorted[medianIndex]  // 평균 (50 percentile)
+        val worstMonths = sorted[worstIndex]    // 불행: 늦은 도달 (90 percentile)
+        
+        // 성공한 경로만 필터링하고, monthsToTarget 기준으로 정렬
+        val successPaths = paths
+            .filter { it.monthsToTarget != null }
+            .sortedBy { it.monthsToTarget }
+        
+        if (successPaths.isEmpty()) return null
+        
+        // 가장 가까운 경로 찾기 함수
+        fun findClosestPath(targetMonths: Int): AssetPath {
+            return successPaths.minByOrNull { path ->
+                kotlin.math.abs((path.monthsToTarget ?: Int.MAX_VALUE) - targetMonths)
+            } ?: successPaths.first()
         }
         
-        val bestIndex = safeIndex(sortedSize, 0.1)
-        val medianIndex = sortedSize / 2
-        val worstIndex = safeIndex(sortedSize, 0.9)
-        
-        val bestMonths = sorted[bestIndex]
-        val medianMonths = sorted[medianIndex]
-        val worstMonths = sorted[worstIndex]
-        
-        // 해당 개월수와 가장 가까운 경로 찾기 (안전한 폴백)
-        val pathSize = paths.size
-        val bestPath = paths.find { it.monthsToTarget == bestMonths }
-            ?: paths.getOrNull(safeIndex(pathSize, 0.1))
-            ?: paths.first()
-        val medianPath = paths.find { it.monthsToTarget == medianMonths }
-            ?: paths.getOrNull(pathSize / 2)
-            ?: paths.first()
-        val worstPath = paths.find { it.monthsToTarget == worstMonths }
-            ?: paths.getOrNull(safeIndex(pathSize, 0.9))
-            ?: paths.first()
+        val bestPath = findClosestPath(bestMonths)
+        val medianPath = findClosestPath(medianMonths)
+        val worstPath = findClosestPath(worstMonths)
         
         return RepresentativePaths(
             best = bestPath,

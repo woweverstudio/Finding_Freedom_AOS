@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -88,6 +89,9 @@ fun SimulationScreen(
         }
         wasSimulating = isSimulating
     }
+    
+    // Note: Plan 설정 변경 감지는 SimulationViewModel에서 처리됨
+    // (iOS의 중앙집중형 방식과 동일하게 ViewModel에서 Flow를 관찰하여 자동 리셋)
     
     Box(
         modifier = modifier
@@ -476,39 +480,25 @@ private fun RetirementReadyHeader(
                 verticalArrangement = Arrangement.spacedBy(ExitSpacing.XS)
             ) {
                 Text(
-                    text = "매월 ${ExitNumberFormatter.formatToManWon(userProfile.desiredMonthlyIncome)} 현금흐름을 위해",
+                    text = "매월 ${ExitNumberFormatter.formatToEokSimple(userProfile.desiredMonthlyIncome)} 현금흐름을 위해",
                     style = ExitTypography.Caption,
                     color = ExitColors.SecondaryText
                 )
                 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(ExitSpacing.XS),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "연",
-                        style = ExitTypography.Body,
-                        color = ExitColors.SecondaryText
-                    )
-                    Text(
-                        text = String.format("%.2f%%", requiredRate),
-                        style = ExitTypography.Title3,
-                        fontWeight = FontWeight.Bold,
-                        color = if (requiredRate < 4) ExitColors.Positive else ExitColors.Accent
-                    )
-                    Text(
-                        text = "수익률만 달성하면 됩니다",
-                        style = ExitTypography.Body,
-                        color = ExitColors.SecondaryText
-                    )
-                }
+                Text(
+                    text = "연 ${String.format("%.2f", requiredRate)}% 수익률만 달성하면 됩니다",
+                    style = ExitTypography.Caption3,
+                    color = ExitColors.SecondaryText
+                )
             }
         }
         
         Text(
             text = "아래는 은퇴 후 자산 변화 시뮬레이션입니다",
-            style = ExitTypography.Caption,
+            style = ExitTypography.Caption2,
             color = ExitColors.TertiaryText,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
             modifier = Modifier.padding(top = ExitSpacing.SM)
         )
     }

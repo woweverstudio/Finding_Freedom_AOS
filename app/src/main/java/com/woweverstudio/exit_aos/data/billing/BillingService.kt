@@ -11,11 +11,10 @@ import javax.inject.Singleton
 
 /**
  * Google Play Billing 상수
- * 나중에 실제 상품 ID로 교체 필요
  */
 object BillingConstants {
     /** 몬테카를로 시뮬레이션 상품 ID (Google Play Console에서 설정) */
-    const val MONTECARLO_PRODUCT_ID = "montecarlo_simulation_lifetime"
+    const val MONTECARLO_PRODUCT_ID = "montecarlo_simulation"
     
     /** 표시 가격 (상품 정보 로드 실패 시 사용) */
     const val DEFAULT_DISPLAY_PRICE = "₩4,900"
@@ -45,11 +44,10 @@ class BillingService @Inject constructor(
     
     // MARK: - State
     
-    // TODO: 테스트 완료 후 BillingState.Loading, false로 복원 필요
-    private val _billingState = MutableStateFlow<BillingState>(BillingState.Purchased)
+    private val _billingState = MutableStateFlow<BillingState>(BillingState.Loading)
     val billingState: StateFlow<BillingState> = _billingState.asStateFlow()
     
-    private val _isMontecarloUnlocked = MutableStateFlow(true) // 테스트용: 항상 구매 완료
+    private val _isMontecarloUnlocked = MutableStateFlow(false)
     val isMontecarloUnlocked: StateFlow<Boolean> = _isMontecarloUnlocked.asStateFlow()
     
     private val _montecarloProduct = MutableStateFlow<ProductDetails?>(null)
