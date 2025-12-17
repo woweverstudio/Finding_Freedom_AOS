@@ -47,6 +47,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.woweverstudio.exit_aos.presentation.ui.components.AmountEditSheet
 import com.woweverstudio.exit_aos.presentation.ui.components.AmountEditType
+import com.woweverstudio.exit_aos.presentation.ui.components.DDayRollingView
 import com.woweverstudio.exit_aos.presentation.ui.components.PlanHeaderView
 import com.woweverstudio.exit_aos.presentation.ui.components.ProgressRingView
 import com.woweverstudio.exit_aos.presentation.ui.theme.ExitColors
@@ -71,6 +72,7 @@ fun DashboardScreen(
     val currentAsset by viewModel.currentAsset.collectAsState()
     val retirementResult by viewModel.retirementResult.collectAsState()
     val hideAmounts by viewModel.hideAmounts.collectAsState()
+    val dDayAnimationTrigger by viewModel.dDayAnimationTrigger.collectAsState()
     
     // 햅틱 피드백
     val haptic = rememberHaptic()
@@ -183,6 +185,7 @@ fun DashboardScreen(
                 item {
                     DDayHeader(
                         retirementResult = retirementResult,
+                        animationTrigger = dDayAnimationTrigger,
                         onExpandHeader = {
                             haptic.light()
                             isHeaderExpanded = true
@@ -259,6 +262,7 @@ fun DashboardScreen(
 @Composable
 private fun DDayHeader(
     retirementResult: com.woweverstudio.exit_aos.domain.usecase.RetirementCalculationResult?,
+    animationTrigger: String,
     onExpandHeader: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -317,11 +321,10 @@ private fun DDayHeader(
                             color = ExitColors.SecondaryText
                         )
                         
-                        Text(
-                            text = retirementResult.dDayString,
-                            style = ExitTypography.Title2,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = ExitColors.Accent
+                        // 파친코 스타일 롤링 애니메이션
+                        DDayRollingView(
+                            months = retirementResult.monthsToRetirement,
+                            animationTrigger = animationTrigger
                         )
                         
                         Text(

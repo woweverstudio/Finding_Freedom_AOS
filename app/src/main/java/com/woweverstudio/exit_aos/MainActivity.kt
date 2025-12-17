@@ -5,20 +5,33 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,7 +43,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.woweverstudio.exit_aos.presentation.ui.dashboard.DashboardScreen
 import com.woweverstudio.exit_aos.presentation.ui.onboarding.OnboardingScreen
@@ -171,34 +188,74 @@ fun ExitBottomNavigation(
     selectedTab: MainTab,
     onTabSelected: (MainTab) -> Unit
 ) {
-    NavigationBar(
-        containerColor = ExitColors.CardBackground,
-        contentColor = ExitColors.Accent
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
     ) {
-        MainTab.entries.forEach { tab ->
-            NavigationBarItem(
-                icon = {
-                    Icon(
-                        imageVector = tab.icon(),
-                        contentDescription = tab.displayName
-                    )
-                },
-                label = {
-                    Text(
-                        text = tab.displayName,
-                        style = ExitTypography.Caption2
-                    )
-                },
-                selected = selectedTab == tab,
-                onClick = { onTabSelected(tab) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = ExitColors.Accent,
-                    selectedTextColor = ExitColors.Accent,
-                    unselectedIconColor = ExitColors.TertiaryText,
-                    unselectedTextColor = ExitColors.TertiaryText,
-                    indicatorColor = ExitColors.Accent.copy(alpha = 0.1f)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(ExitColors.CardBackground)
+                .padding(horizontal = 6.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            MainTab.entries.forEach { tab ->
+                val isSelected = selectedTab == tab
+                val animatedWeight by animateFloatAsState(
+                    targetValue = if (isSelected) 1.2f else 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    ),
+                    label = "tabWeight"
                 )
-            )
+                
+                Box(
+                    modifier = Modifier
+                        .weight(animatedWeight)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(
+                            if (isSelected) ExitColors.Accent.copy(alpha = 0.15f)
+                            else Color.Transparent
+                        )
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onTabSelected(tab) }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = tab.icon(),
+                            contentDescription = tab.displayName,
+                            tint = if (isSelected) ExitColors.Accent else ExitColors.TertiaryText,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        
+                        AnimatedVisibility(
+                            visible = isSelected,
+                            enter = fadeIn() + expandHorizontally(),
+                            exit = fadeOut() + shrinkHorizontally()
+                        ) {
+                            Text(
+                                text = tab.displayName,
+                                style = ExitTypography.Caption,
+                                fontWeight = FontWeight.SemiBold,
+                                color = ExitColors.Accent,
+                                modifier = Modifier.padding(start = 6.dp)
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
