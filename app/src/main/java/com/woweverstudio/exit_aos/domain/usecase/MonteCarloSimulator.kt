@@ -199,20 +199,20 @@ object MonteCarloSimulator {
                 val paths = if (trackPaths) ArrayList<AssetPath>(chunkCount) else ArrayList()
                 var failureCount = 0
                 
-                for (i in 0 until chunkCount) {
-                    // 메모리 최적화: 샘플링 (100개당 1개만 경로 저장)
-                    val shouldTrackPath = trackPathsSampled && (i % sampleRate == 0)
-                    
-                    val (months, path) = runSingleSimulation(
-                        initialAsset = initialAsset,
-                        monthlyInvestment = monthlyInvestment,
-                        targetAsset = targetAsset,
-                        monthlyMean = monthlyMean,
-                        monthlyVolatility = monthlyVolatility,
-                        maxMonths = maxMonths,
-                        trackPath = shouldTrackPath,
-                        random = random
-                    )
+                    for (i in 0 until chunkCount) {
+                        // 메모리 최적화: 샘플링 (100개당 1개만 경로 저장)
+                        val shouldTrackPath = trackPathsSampled && (i % sampleRate == 0)
+                        
+                        val (months, path) = runSingleSimulation(
+                            initialAsset = initialAsset,
+                            monthlyInvestment = monthlyInvestment,
+                            targetAsset = targetAsset,
+                            monthlyMean = monthlyMean,
+                            monthlyVolatility = monthlyVolatility,
+                            maxMonths = maxMonths,
+                            trackPath = shouldTrackPath,
+                            random = random
+                        )
                     
                     if (months != null) {
                         successMonths.add(months)
@@ -286,8 +286,10 @@ object MonteCarloSimulator {
             // 1. 월초 투자금 추가
             currentAsset += monthlyInvestment
             
-            // 2. Box-Muller 변환 (u1이 0이면 ln(0) = -Infinity 방지)
-            val u1 = random.nextDouble().coerceIn(1e-10, 1.0 - 1e-10)
+            // 2. Box-Muller 변환
+            // iOS와 동일하게 0..<1 범위 사용 (극단적인 값도 정규분포에 포함되어야 함)
+            // Double.MIN_VALUE를 더해서 정확히 0이 되는 것만 방지
+            val u1 = random.nextDouble().coerceAtLeast(Double.MIN_VALUE)
             val u2 = random.nextDouble()
             val z0 = sqrt(-2.0 * ln(u1)) * cos(2.0 * PI * u2)
             val monthlyReturn = monthlyMean + z0 * monthlyVolatility
