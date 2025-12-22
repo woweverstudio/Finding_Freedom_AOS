@@ -15,79 +15,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.woweverstudio.exit_aos.presentation.ui.theme.ExitColors
 import com.woweverstudio.exit_aos.presentation.ui.theme.ExitTypography
 import kotlinx.coroutines.delay
-
-/**
- * 파친코 스타일 숫자 롤링 애니메이션 뷰
- * iOS의 RollingNumberView와 동일한 동작
- *
- * @param value 표시할 목표 숫자
- * @param style 텍스트 스타일
- * @param color 텍스트 색상
- * @param animationTrigger 애니메이션 트리거 (이 값이 변경되면 애니메이션 재시작)
- */
-@Composable
-fun RollingNumberView(
-    value: Int,
-    modifier: Modifier = Modifier,
-    style: TextStyle = ExitTypography.Title2,
-    color: Color = ExitColors.Accent,
-    animationTrigger: String = ""
-) {
-    var displayedValue by remember { mutableIntStateOf(0) }
-    var isAnimating by remember { mutableStateOf(false) }
-    
-    // Spring 애니메이션 (iOS: response: 0.15, dampingFraction: 0.8)
-    val animatedValue by animateIntAsState(
-        targetValue = displayedValue,
-        animationSpec = spring(
-            dampingRatio = 0.8f,
-            stiffness = Spring.StiffnessMediumLow
-        ),
-        label = "rollingNumber"
-    )
-    
-    // 애니메이션 트리거가 변경되거나 처음 로드 시 애니메이션 시작
-    LaunchedEffect(animationTrigger, value) {
-        if (isAnimating) return@LaunchedEffect
-        isAnimating = true
-        displayedValue = 0
-        
-        // 단계별 애니메이션으로 숫자가 올라가는 효과
-        // iOS: totalDuration = 0.4초, steps = min(12, max(6, value / 4))
-        val totalDuration = 400L // 0.4초
-        val steps = minOf(12, maxOf(6, value / 4))
-        val stepDuration = totalDuration / steps
-        
-        for (step in 0..steps) {
-            val progress = step.toFloat() / steps
-            val targetValue = (value * progress).toInt()
-            displayedValue = targetValue
-            
-            if (step < steps) {
-                delay(stepDuration)
-            }
-        }
-        
-        // 최종값 보정
-        displayedValue = value
-        isAnimating = false
-    }
-    
-    Text(
-        text = "$animatedValue",
-        style = style,
-        fontWeight = FontWeight.ExtraBold,
-        color = color,
-        modifier = modifier
-    )
-}
 
 /**
  * D-Day 롤링 애니메이션 뷰 (X년 Y개월 형식)
@@ -105,8 +37,13 @@ fun DDayRollingView(
     val targetYears = months / 12
     val targetMonths = months % 12
     
-    var displayedYears by remember { mutableIntStateOf(0) }
-    var displayedMonths by remember { mutableIntStateOf(0) }
+    // 이전 값 저장 (값 변경 감지용)
+    var previousMonths by remember { mutableIntStateOf(months) }
+    var previousTrigger by remember { mutableStateOf(animationTrigger) }
+    var isFirstLoad by remember { mutableStateOf(true) }
+    
+    var displayedYears by remember { mutableIntStateOf(targetYears) }
+    var displayedMonths by remember { mutableIntStateOf(targetMonths) }
     var isAnimating by remember { mutableStateOf(false) }
     
     // Spring 애니메이션 for years (iOS: response: 0.12, dampingFraction: 0.85)
@@ -129,8 +66,37 @@ fun DDayRollingView(
         label = "rollingMonths"
     )
     
-    // 애니메이션 트리거가 변경되거나 처음 로드 시 애니메이션 시작
+    // 값이 변경되었을 때만 애니메이션 실행 (iOS와 동일)
     LaunchedEffect(animationTrigger, months) {
+        // 첫 로드 시에는 애니메이션 없이 값만 설정
+        if (isFirstLoad) {
+            isFirstLoad = false
+            displayedYears = targetYears
+            displayedMonths = targetMonths
+            previousMonths = months
+            previousTrigger = animationTrigger
+            return@LaunchedEffect
+        }
+        
+        // 값이 변경되지 않았으면 애니메이션 하지 않음
+        val monthsChanged = previousMonths != months
+        val triggerChanged = previousTrigger != animationTrigger
+        
+        if (!monthsChanged && !triggerChanged) {
+            return@LaunchedEffect
+        }
+        
+        // 트리거만 변경되고 값이 같으면 애니메이션 하지 않음
+        if (!monthsChanged && triggerChanged) {
+            previousTrigger = animationTrigger
+            return@LaunchedEffect
+        }
+        
+        // 이전 값 업데이트
+        previousMonths = months
+        previousTrigger = animationTrigger
+        
+        // 이미 애니메이션 중이면 스킵
         if (isAnimating) return@LaunchedEffect
         isAnimating = true
         displayedYears = 0

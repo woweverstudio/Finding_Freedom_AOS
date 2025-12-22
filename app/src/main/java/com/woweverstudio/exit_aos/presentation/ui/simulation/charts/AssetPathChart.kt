@@ -6,9 +6,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -64,7 +64,7 @@ fun AssetPathChart(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.ShowChart,
+                imageVector = Icons.AutoMirrored.Filled.ShowChart,
                 contentDescription = null,
                 tint = ExitColors.Accent
             )
@@ -386,11 +386,15 @@ private fun TimelineChart(
                     )
                 }
                 
-                Box(
+                BoxWithConstraints(
                     modifier = Modifier
                         .weight(1f)
                         .height(24.dp)
                 ) {
+                    val fraction = if (maxMonths > 0) item.months.toFloat() / maxMonths else 0f
+                    // 바 너비가 80dp 이상인지 확인 (maxWidth * fraction > 80.dp)
+                    val showTextInside = maxWidth * fraction > 80.dp
+                    
                     // 배경 바
                     Box(
                         modifier = Modifier
@@ -400,24 +404,40 @@ private fun TimelineChart(
                     )
                     
                     // 진행률 바
-                    val fraction = if (maxMonths > 0) item.months.toFloat() / maxMonths else 0f
-                    val showTextInside = fraction > 0.35f
-                    
                     Box(
                         modifier = Modifier
                             .fillMaxHeight()
-                            .fillMaxWidth(fraction.coerceAtLeast(0.05f))
+                            .fillMaxWidth(fraction.coerceAtLeast(0.02f))
                             .clip(RoundedCornerShape(4.dp))
                             .background(item.color.copy(alpha = 0.8f))
-                    ) {
+                    )
+                    
+                    // 텍스트 - 바 크기에 따라 위치 결정
+                    if (showTextInside) {
+                        // 바 안에 텍스트 (오른쪽 정렬)
                         Text(
                             text = formatYearsMonths(item.months),
                             style = ExitTypography.Caption2,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (showTextInside) Color.White else item.color,
+                            color = Color.White,
+                            maxLines = 1,
                             modifier = Modifier
-                                .align(if (showTextInside) Alignment.CenterEnd else Alignment.CenterStart)
+                                .fillMaxWidth(fraction)
+                                .align(Alignment.CenterStart)
                                 .padding(horizontal = 8.dp)
+                                .wrapContentWidth(Alignment.End)
+                        )
+                    } else {
+                        // 바 바깥에 텍스트 (바 오른쪽에 표시)
+                        Text(
+                            text = formatYearsMonths(item.months),
+                            style = ExitTypography.Caption2,
+                            fontWeight = FontWeight.SemiBold,
+                            color = item.color,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .padding(start = (maxWidth * fraction) + 8.dp)
                         )
                     }
                 }

@@ -1,13 +1,16 @@
 package com.woweverstudio.exit_aos.presentation.ui.simulation
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -21,10 +24,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.woweverstudio.exit_aos.R
 import com.woweverstudio.exit_aos.domain.model.UserProfile
 import com.woweverstudio.exit_aos.presentation.ui.theme.*
 import com.woweverstudio.exit_aos.util.ExitNumberFormatter
@@ -74,8 +80,8 @@ fun SimulationEmptyView(
         
         Spacer(modifier = Modifier.height(ExitSpacing.XXL))
         
-        // 데모 카드들 (별도 파일로 분리)
-        SimulationDemoCards()
+        // 예시 이미지 섹션
+        ExampleImagesSection()
         
         Spacer(modifier = Modifier.height(ExitSpacing.XXL))
         
@@ -133,7 +139,7 @@ private fun HeroSection() {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.ShowChart,
+                    imageVector = Icons.AutoMirrored.Filled.ShowChart,
                     contentDescription = null,
                     modifier = Modifier.size(44.dp),
                     tint = ExitColors.Accent
@@ -329,7 +335,7 @@ private fun ComparisonView() {
         }
         
         Icon(
-            imageVector = Icons.Default.ArrowForward,
+            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
             contentDescription = null,
             modifier = Modifier.size(20.dp),
             tint = ExitColors.Accent
@@ -546,7 +552,7 @@ private fun RandomNumberVisualization() {
             }
             
             Icon(
-                imageVector = Icons.Default.ArrowForward,
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
                 tint = ExitColors.TertiaryText
             )
@@ -573,7 +579,7 @@ private fun RandomNumberVisualization() {
             }
             
             Icon(
-                imageVector = Icons.Default.ArrowForward,
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
                 tint = ExitColors.TertiaryText
             )
@@ -639,7 +645,7 @@ private fun RepetitionVisualization() {
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ShowChart,
+                            imageVector = Icons.AutoMirrored.Filled.ShowChart,
                             contentDescription = null,
                             modifier = Modifier.size(14.dp),
                             tint = ExitColors.Accent
@@ -672,7 +678,7 @@ private fun RepetitionVisualization() {
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ShowChart,
+                        imageVector = Icons.AutoMirrored.Filled.ShowChart,
                         contentDescription = null,
                         modifier = Modifier.size(14.dp),
                         tint = Color.White
@@ -694,6 +700,7 @@ private fun RepetitionVisualization() {
 private fun SortingVisualization() {
     Column(
         modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(ExitSpacing.SM)
     ) {
         Row(
@@ -882,7 +889,7 @@ private fun WhatYouGetSection() {
             )
             
             FeatureCard(
-                icon = Icons.Default.ShowChart,
+                icon = Icons.AutoMirrored.Filled.ShowChart,
                 iconColor = ExitColors.Positive,
                 title = "자산 변화 예측",
                 description = "행운/평균/불행 3가지 시나리오로 시각화해요."
@@ -1168,17 +1175,45 @@ private fun SectionHeader(
     }
 }
 
+// MARK: - Example Images Section
+
 @Composable
-internal fun DemoBadge() {
-    Text(
-        text = "예시",
-        style = ExitTypography.Caption2,
-        fontWeight = FontWeight.SemiBold,
-        color = Color(0xFFFFD700),
+private fun ExampleImagesSection() {
+    Column(
+        modifier = Modifier.padding(horizontal = ExitSpacing.MD),
+        verticalArrangement = Arrangement.spacedBy(ExitSpacing.LG)
+    ) {
+        SectionHeader(
+            icon = Icons.Outlined.Photo,
+            title = "이런 결과를 볼 수 있어요"
+        )
+        
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(ExitSpacing.MD)
+        ) {
+            // 실제 이미지들 (sample1, sample2, sample3, sample4)
+            ExampleImage(imageResId = R.drawable.sample1)
+            ExampleImage(imageResId = R.drawable.sample2)
+            ExampleImage(imageResId = R.drawable.sample3)
+            ExampleImage(imageResId = R.drawable.sample4)
+        }
+    }
+}
+
+@Composable
+private fun ExampleImage(
+    imageResId: Int
+) {
+    Image(
+        painter = painterResource(id = imageResId),
+        contentDescription = null,
         modifier = Modifier
-            .clip(RoundedCornerShape(ExitRadius.Full))
-            .background(Color(0xFFFFD700).copy(alpha = 0.2f))
-            .padding(horizontal = ExitSpacing.SM, vertical = ExitSpacing.XS)
+            .height(400.dp)
+            .clip(RoundedCornerShape(ExitRadius.LG)),
+        contentScale = ContentScale.Fit
     )
 }
 
